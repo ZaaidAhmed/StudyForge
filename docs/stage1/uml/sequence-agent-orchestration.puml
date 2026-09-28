@@ -1,0 +1,27 @@
+@startuml
+actor Student
+participant "AgentController / CLI" as UI
+participant StudyAgentFacade as Facade
+participant AgentCoordinator as Coordinator
+participant IntentAnalyzer as Intent
+participant TaskPlanner as Planner
+participant AgentPlanValidator as Validator
+participant AgentToolManager as Tools
+participant MemoryManager as Memory
+participant ResponseSynthesizer as Synth
+Student -> UI: request study assistance
+UI -> Facade: agentAssist(courseId, request)
+Facade -> Coordinator: run(courseId, request)
+Coordinator -> Intent: analyze(request)
+Intent --> Coordinator: supported intent
+Coordinator -> Planner: plan(intent)
+Planner --> Coordinator: bounded observable plan
+Coordinator -> Validator: validate(plan, courseId)
+Validator --> Coordinator: accepted/rejected
+Coordinator -> Tools: execute whitelisted steps
+Tools --> Coordinator: ToolResult list
+Coordinator -> Memory: recent(courseId)
+Memory --> Coordinator: bounded history
+Coordinator -> Synth: synthesize(plan results, memory)
+Synth --> UI: safe observable response
+@enduml

@@ -1,0 +1,42 @@
+@startuml
+title SD08 - Search Course Material
+actor Student
+participant MaterialController as Web
+participant MaterialSearchCommand as CLI
+participant StudyAgentFacade as Facade
+participant CourseSearchService as Search
+participant CourseRepository as Courses
+participant DocumentChunkRepository as Chunks
+participant QueryNormalizer as Normalizer
+participant RetrievalScorer as Scorer
+
+alt Web request
+  Student -> Web: search(courseId, query, topK)
+  Web -> Facade: searchMaterials(courseId, query, topK)
+else CLI request
+  Student -> CLI: material search(course, query, limit)
+  CLI -> Facade: searchMaterials(courseId, query, limit)
+end
+Facade -> Search: search(courseId, query, topK)
+Search -> Courses: existsById(courseId)
+alt missing course
+  Courses --> Search: false
+  Search --> Facade: controlled not-found error
+else valid course
+  Search -> Normalizer: normalize(query)
+  alt blank query
+    Normalizer --> Search: no terms
+    Search --> Facade: controlled validation error
+  else terms available
+    Search -> Chunks: findSearchableByCourseId(courseId, READY)
+    Chunks --> Search: eligible course chunks
+    loop each chunk
+      Search -> Scorer: score(normalizedQuery, chunk)
+      Scorer --> Search: score and matched terms
+    end
+    Search --> Facade: ranked source-aware top-K results or empty list
+  end
+end
+Facade --> Web: render results
+Facade --> CLI: print results
+@enduml

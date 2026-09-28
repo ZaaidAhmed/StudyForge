@@ -1,0 +1,3 @@
+package ca.yorku.eecs3311.coursepilot.application.service;
+import ca.yorku.eecs3311.coursepilot.application.dto.ProgressSummary; import java.time.*; import java.util.*;
+public class WeakTopicFocusedStrategy implements StudyPlanningStrategy {public String name(){return "WEAK_TOPIC_FOCUSED";}public List<Activity> build(LocalDate s,LocalDate t,int m,List<ProgressSummary.TopicProgress> topics){var weak=topics.stream().filter(x->!x.status().equals("STRONG")).sorted(Comparator.comparingDouble(ProgressSummary.TopicProgress::score)).toList();return BalancedStudyStrategy.distribute(s,t,m,weak.isEmpty()?topics:weak,"Focus on");}}

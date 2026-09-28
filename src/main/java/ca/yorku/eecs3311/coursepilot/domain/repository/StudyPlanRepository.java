@@ -1,0 +1,3 @@
+package ca.yorku.eecs3311.coursepilot.domain.repository;
+import ca.yorku.eecs3311.coursepilot.domain.model.StudyPlan; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param; import java.util.*;
+public interface StudyPlanRepository extends JpaRepository<StudyPlan,Long>{@Query("select distinct p from StudyPlan p left join fetch p.items where p.course.id=:courseId order by p.id desc")List<StudyPlan> findByCourseId(@Param("courseId")Long courseId);@Query("select distinct p from StudyPlan p left join fetch p.items where p.id=:id and p.course.id=:courseId")Optional<StudyPlan> findOwned(@Param("id")Long id,@Param("courseId")Long courseId);}

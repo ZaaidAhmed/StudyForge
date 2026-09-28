@@ -1,0 +1,21 @@
+@startuml
+actor Student
+participant FlashcardController
+participant FlashcardGenerationService
+participant CourseMaterialService
+participant GroundingContextBuilder
+participant PromptBuilder
+participant LlmClient
+participant StructuredResponseParser
+database FlashcardRepository
+Student -> FlashcardController: generate(course, document, count)
+FlashcardController -> FlashcardGenerationService: generate(...)
+FlashcardGenerationService -> CourseMaterialService: validate READY ownership/load chunks
+FlashcardGenerationService -> GroundingContextBuilder: build bounded sources
+FlashcardGenerationService -> PromptBuilder: buildFlashcardGenerationPrompt
+FlashcardGenerationService -> LlmClient: generate
+FlashcardGenerationService -> StructuredResponseParser: parse JSON
+FlashcardGenerationService -> FlashcardGenerationService: validate sources/dedupe
+FlashcardGenerationService -> FlashcardRepository: persist cards and sources
+FlashcardController --> Student: actual created count
+@enduml

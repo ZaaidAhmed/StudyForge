@@ -1,0 +1,26 @@
+@startuml
+title SD07 - Generate and Review Flashcards
+actor Student
+participant FlashcardController as UI
+participant FlashcardService as Cards
+participant MaterialSearchService as Search
+participant PromptBuilder as Prompts
+participant LlmClient as LLM
+participant StructuredResponseParser as Parser
+participant FlashcardRepository as CardRepo
+participant FlashcardAttemptRepository as ReviewRepo
+Student -> UI: generateFlashcards(course, topic)
+UI -> Cards: generateFlashcards(request)
+Cards -> Search: search(courseId, topic, topK)
+Search --> Cards: source chunks
+Cards -> Prompts: groundedPrompt(chunks, flashcard task)
+Cards -> LLM: generate(request)
+LLM --> Cards: structured response
+Cards -> Parser: parseFlashcards(response)
+Cards -> CardRepo: saveAll(cards)
+Cards --> UI: flashcards with sources
+Student -> UI: review(cardId, rating)
+UI -> Cards: recordReview(request)
+Cards -> ReviewRepo: save(attempt)
+Cards --> UI: review recorded
+@enduml

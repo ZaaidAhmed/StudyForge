@@ -1,0 +1,33 @@
+@startuml
+title SD05 - Generate Personalized Study Plan
+actor Student
+participant StudyController as UI
+participant StudyAgentFacade as Facade
+participant ProgressService as Progress
+participant WeakTopicAnalyzer as WeakTopics
+participant StudyPlanService as Plans
+participant StudyStrategy as Strategy
+participant Scheduler
+participant LlmClient as LLM
+participant StudyPlanRepository as PlansRepo
+Student -> UI: createPlan(course, examDate, minutesPerDay)
+UI -> Facade: createPlan(request)
+Facade -> Progress: findWeakTopics(courseId)
+Progress --> Facade: progress
+Facade -> WeakTopics: identify(progress)
+WeakTopics --> Facade: prioritized topics
+Facade -> Plans: createPlan(request, topics)
+Plans -> Strategy: allocate(input)
+Strategy --> Plans: candidate StudyActivity[]
+Plans -> Scheduler: schedule(activities, constraints)
+Scheduler --> Plans: valid schedule or conflict
+alt impossible constraints
+  Plans --> UI: explain constraint conflict
+else valid schedule
+  opt activity wording
+    Plans -> LLM: generate bounded descriptions
+  end
+  Plans -> PlansRepo: save(plan)
+  Plans --> UI: persisted plan
+end
+@enduml

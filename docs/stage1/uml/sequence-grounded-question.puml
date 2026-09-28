@@ -1,0 +1,37 @@
+@startuml
+title SD02 - Ask Grounded Course Question
+actor Student
+participant AgentController as UI
+participant StudyAgentFacade as Facade
+participant AgentCoordinator as Coord
+participant TaskPlanner as Planner
+participant AgentToolManager as Tools
+participant CourseSearchTool as SearchTool
+participant MaterialSearchService as Search
+participant PromptBuilder as Prompts
+participant LlmClient as LLM
+participant OllamaLlmAdapter as Ollama
+participant LearningHistoryService as History
+Student -> UI: askQuestion(course, question)
+UI -> Facade: ask(request)
+Facade -> Coord: coordinate(request)
+Coord -> Planner: createPlan(intent, context)
+Planner --> Coord: retrieve-and-answer plan
+Coord -> Tools: commandFor("search-course")
+Tools -> SearchTool: execute(context)
+SearchTool -> Search: search(courseId, query, topK)
+Search --> SearchTool: RetrievedChunk[]
+alt insufficient material
+  SearchTool --> Coord: insufficiency
+  Coord --> UI: cannot answer from uploaded material
+else relevant context found
+  Coord -> Prompts: groundedPrompt(chunks, question)
+  Prompts --> Coord: LlmRequest
+  Coord -> LLM: generate(request)
+  LLM -> Ollama: HTTP generate(request)
+  Ollama --> LLM: LlmResponse
+  LLM --> Coord: response
+  Coord -> History: recordSession(outcome, sources)
+  Coord --> UI: answer and validated sources
+end
+@enduml

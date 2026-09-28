@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content narrow"><a class="back-link" th:href="@{/courses}">← Back to courses</a><div class="page-heading"><div><p class="eyebrow">Course management</p><h1 th:text="${pageTitle}">Create course</h1></div></div>
+<form class="panel form-panel" th:action="${formAction}" th:object="${courseForm}" method="post">
+    <div class="form-field"><label for="courseCode">Course code</label><input id="courseCode" type="text" th:field="*{courseCode}" placeholder="EECS3311" autocomplete="off"><p class="field-error" th:if="${#fields.hasErrors('courseCode')}" th:errors="*{courseCode}"></p><p class="field-hint">Codes are trimmed and normalized to uppercase.</p></div>
+    <div class="form-field"><label for="name">Course name</label><input id="name" type="text" th:field="*{name}" placeholder="Software Design"><p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p></div>
+    <div class="form-field"><label for="description">Description <span class="optional">Optional</span></label><textarea id="description" th:field="*{description}" rows="4" placeholder="What is this course about?"></textarea><p class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></p></div>
+    <div class="form-field"><label for="examDate">Exam date <span class="optional">Optional</span></label><input id="examDate" type="date" th:field="*{examDate}"><p class="field-error" th:if="${#fields.hasErrors('examDate')}" th:errors="*{examDate}"></p></div>
+    <div class="form-actions"><a class="button ghost" th:href="@{/courses}">Cancel</a><button class="button primary" type="submit">Save course</button></div>
+</form></main></body></html>

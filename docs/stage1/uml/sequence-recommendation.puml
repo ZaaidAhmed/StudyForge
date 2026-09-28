@@ -1,0 +1,26 @@
+@startuml
+title SD06 - Adaptive What Should I Study Next?
+actor Student
+participant AgentController as UI
+participant StudyAgentFacade as Facade
+participant AgentCoordinator as Coord
+participant HistoryTool as HistoryTool
+participant LearningHistoryService as History
+participant ProgressTool as ProgressTool
+participant ProgressService as Progress
+participant StudyPlanTool as PlanTool
+participant StudyPlanService as Plans
+participant RecommendationService as Recommendation
+Student -> UI: askWhatShouldStudyNext(course)
+UI -> Facade: ask(request)
+Facade -> Coord: coordinate(request)
+Coord -> ProgressTool: execute(context)
+ProgressTool -> Progress: findWeakTopics(courseId)
+Coord -> PlanTool: execute(context)
+PlanTool -> Plans: currentPlan(courseId)
+Coord -> HistoryTool: execute(context)
+HistoryTool -> History: findRelevantHistory(courseId)
+Coord -> Recommendation: recommendNextStep(progress, plan, history)
+Recommendation --> Coord: recommendation and explanation
+Coord --> UI: next action
+@enduml

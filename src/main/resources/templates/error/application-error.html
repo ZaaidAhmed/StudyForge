@@ -1,0 +1,2 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('Error')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><main class="content narrow"><section class="panel empty-state"><p class="eyebrow">StudyForge AI</p><h1 th:text="${errorTitle}">Something went wrong</h1><p th:text="${errorMessage}">Please try again.</p><a class="button primary" th:href="@{/}">Return to dashboard</a></section></main></body></html>

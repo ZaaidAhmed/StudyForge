@@ -1,0 +1,16 @@
+@startuml
+actor Student
+participant FlashcardController
+participant FlashcardReviewService
+database FlashcardRepository
+database FlashcardReviewRepository
+Student -> FlashcardController: open review
+FlashcardController -> FlashcardReviewService: list(course)
+FlashcardReviewService -> FlashcardRepository: load deterministic cards
+FlashcardController --> Student: question and reveal control
+Student -> FlashcardController: rating(card, rating)
+FlashcardController -> FlashcardReviewService: review(...)
+FlashcardReviewService -> FlashcardRepository: validate course ownership
+FlashcardReviewService -> FlashcardReviewRepository: append review event
+FlashcardController --> Student: next/current review state
+@enduml

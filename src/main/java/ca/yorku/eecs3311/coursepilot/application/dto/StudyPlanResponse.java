@@ -1,0 +1,3 @@
+package ca.yorku.eecs3311.coursepilot.application.dto;
+import ca.yorku.eecs3311.coursepilot.domain.model.*; import java.time.*; import java.util.*;
+public record StudyPlanResponse(Long id,Long courseId,LocalDate startDate,LocalDate targetDate,int availableMinutes,String strategy,List<Item> items){public StudyPlanResponse{items=List.copyOf(items);}public static StudyPlanResponse from(StudyPlan p){return new StudyPlanResponse(p.getId(),p.getCourse().getId(),p.getStartDate(),p.getTargetDate(),p.getAvailableMinutes(),p.getStrategy(),p.getItems().stream().map(i->new Item(i.getScheduledDate(),i.getActivity(),i.getMinutes())).toList());}public record Item(LocalDate date,String activity,int minutes){}}

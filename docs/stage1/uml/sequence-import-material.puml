@@ -1,0 +1,43 @@
+@startuml
+title SD01 - Import Course Material
+actor Student
+participant MaterialController as UI
+participant StudyAgentFacade as Facade
+participant CourseMaterialService as Import
+participant DocumentValidator as Validator
+participant HashService as Hash
+participant DocumentExtractorFactory as Factory
+participant DocumentTextExtractor as Extractor
+participant TextChunker as Chunker
+participant FileStorageService as Storage
+participant CourseDocumentRepository as Documents
+participant DocumentChunkRepository as Chunks
+Student -> UI: upload(courseId, file)
+UI -> Facade: importMaterial(courseId, filename, bytes)
+Facade -> Import: importMaterial(courseId, filename, type, bytes)
+Import -> Validator: validate(file)
+Import -> Hash: sha256(bytes)
+Import -> Documents: findByCourseIdAndSha256Hash(courseId, hash)
+alt duplicate
+  Import --> UI: controlled duplicate error
+else new material
+  Import -> Storage: store(extension, bytes)
+end
+alt invalid file
+  Validator --> Import: failure(reason)
+  Import --> UI: controlled error
+else valid file
+  Import -> Factory: forType(extension)
+  Factory --> Import: Extractor
+  Import -> Extractor: extract(bytes)
+  alt extraction failure or empty text
+    Extractor --> Import: failure
+    Import --> UI: FAILED processing status
+  else extracted
+    Import -> Chunker: chunk(normalizedText)
+    Import -> Documents: save(document READY)
+    Import -> Chunks: saveAll(chunks with page metadata)
+    Import --> UI: completed document and sources
+  end
+end
+@enduml

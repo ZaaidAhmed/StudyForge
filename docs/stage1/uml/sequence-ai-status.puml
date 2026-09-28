@@ -1,0 +1,23 @@
+@startuml
+title AI availability status
+actor User
+participant "AiStatusCommand" as CLI
+participant "StudyAgentFacade" as Facade
+interface "LlmClient" as Client
+participant "OllamaLlmAdapter" as Adapter
+participant Ollama
+User -> CLI: studyforge ai status
+CLI -> Facade: aiStatus()
+Facade -> Client: checkAvailability()
+Client -> Adapter: checkAvailability()
+Adapter -> Ollama: GET /api/tags
+alt reachable
+  Ollama --> Adapter: 200
+  Adapter --> Facade: AVAILABLE
+else unavailable
+  Ollama --> Adapter: timeout/error
+  Adapter --> Facade: UNAVAILABLE
+end
+Facade --> CLI: LlmAvailability
+CLI --> User: status and message
+@enduml

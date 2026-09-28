@@ -1,0 +1,25 @@
+@startuml
+title SD04 - Complete Quiz and Update Progress
+actor Student
+participant QuizController as UI
+participant QuizService as Quiz
+participant GradingService as Grading
+participant QuizAttemptRepository as Attempts
+participant QuizCompletedEvent as Event
+participant ProgressUpdateListener as ProgressListener
+participant ProgressService as Progress
+participant TopicProgressRepository as TopicProgress
+participant AdaptiveLearningListener as Adaptive
+Student -> UI: submitQuiz(quizId, responses)
+UI -> Quiz: submitQuiz(request)
+Quiz -> Grading: grade(quiz, responses)
+Grading --> Quiz: GradeResult
+Quiz -> Attempts: save(attempt)
+Quiz -> Event: publish(completed)
+Event -> ProgressListener: onQuizCompleted(event)
+ProgressListener -> Progress: updateProgress(event)
+Progress -> TopicProgress: saveAll(updatedTopics)
+Event -> Adaptive: onQuizCompleted(event)
+Adaptive --> Event: mark recommendations stale
+Quiz --> UI: score and per-question results
+@enduml

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · StudyForge AI'">StudyForge AI</title>
+    <link rel="stylesheet" th:href="@{/css/coursepilot.css}"><link rel="stylesheet" th:href="@{/css/search.css}"><link rel="stylesheet" th:href="@{/css/ui-refinements.css}">
+</head>
+<body>
+<header th:fragment="topbar" class="topbar"><button class="menu-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false">Menu</button><a class="brand" th:href="@{/}"><span class="brand-mark">SF</span><span>StudyForge AI</span></a><span class="phase-badge">Phase 7 · flashcards + grounded study tools</span></header>
+<aside th:fragment="sidebar" id="primary-navigation" class="sidebar" aria-label="Primary navigation"><nav>
+    <span class="nav-section nav-section-first">Workspace</span>
+    <a th:href="@{/}" class="nav-link" th:classappend="${activeNav == 'dashboard' ? ' active' : ''}" th:aria-current="${activeNav == 'dashboard' ? 'page' : null}">Dashboard</a>
+    <a th:href="@{/courses}" class="nav-link" th:classappend="${activeNav == 'courses' ? ' active' : ''}" th:aria-current="${activeNav == 'courses' ? 'page' : null}">Courses</a>
+    <span class="nav-section">Course tools</span>
+    <a th:if="${course != null}" th:href="@{/courses/{id}/ask(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'ask' ? ' active' : ''}" th:aria-current="${activeNav == 'ask' ? 'page' : null}">Ask StudyForge</a>
+    <a th:unless="${course != null}" th:href="@{/courses}" class="nav-link">Ask StudyForge</a>
+    <a th:if="${course != null}" th:href="@{/courses/{id}/materials(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'materials' ? ' active' : ''}" th:aria-current="${activeNav == 'materials' ? 'page' : null}">Materials &amp; Search</a>
+    <a th:href="@{/ai/status}" class="nav-link" th:classappend="${activeNav == 'ai' ? ' active' : ''}" th:aria-current="${activeNav == 'ai' ? 'page' : null}">AI status</a>
+    <a th:if="${course != null}" th:href="@{/courses/{id}/concepts(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'concepts' ? ' active' : ''}" th:aria-current="${activeNav == 'concepts' ? 'page' : null}">Concepts</a>
+    <a th:unless="${course != null}" th:href="@{/courses}" class="nav-link">Concepts</a>
+    <a th:if="${course != null}" th:href="@{/courses/{id}/flashcards(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'flashcards' ? ' active' : ''}" th:aria-current="${activeNav == 'flashcards' ? 'page' : null}">Flashcards</a>
+    <a th:unless="${course != null}" th:href="@{/courses}" class="nav-link">Flashcards</a>
+    <a th:if="${course != null}" th:href="@{/courses/{id}/quizzes(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'quizzes' ? ' active' : ''}" th:aria-current="${activeNav == 'quizzes' ? 'page' : null}">Quizzes</a><a th:unless="${course != null}" th:href="@{/courses}" class="nav-link">Quizzes</a>
+    <a th:if="${course != null}" th:href="@{/courses/{id}/study-plan(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'study-plan' ? ' active' : ''}" th:aria-current="${activeNav == 'study-plan' ? 'page' : null}">Study Plan</a><a th:unless="${course != null}" th:href="@{/courses}" class="nav-link">Study Plan</a><a th:if="${course != null}" th:href="@{/courses/{id}/progress(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'progress' ? ' active' : ''}" th:aria-current="${activeNav == 'progress' ? 'page' : null}">Progress</a><a th:unless="${course != null}" th:href="@{/courses}" class="nav-link">Progress</a><a th:if="${course != null}" th:href="@{/courses/{id}/recommendation(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'recommendation' ? ' active' : ''}" th:aria-current="${activeNav == 'recommendation' ? 'page' : null}">Next step</a><a th:if="${course != null}" th:href="@{/courses/{id}/history(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'history' ? ' active' : ''}" th:aria-current="${activeNav == 'history' ? 'page' : null}">History</a><a th:if="${course != null}" th:href="@{/courses/{id}/agent(id=${course.id})}" class="nav-link" th:classappend="${activeNav == 'agent' ? ' active' : ''}" th:aria-current="${activeNav == 'agent' ? 'page' : null}">Agent assistance</a>
+</nav></aside>
+<script>document.addEventListener('DOMContentLoaded',function(){const b=document.querySelector('.menu-toggle'),n=document.getElementById('primary-navigation');if(b&&n){b.addEventListener('click',function(){const open=n.classList.toggle('is-open');b.setAttribute('aria-expanded',String(open));});}});</script>
+</body>
+</html>

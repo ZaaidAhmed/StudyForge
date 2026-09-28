@@ -1,0 +1,18 @@
+@startuml
+actor Student
+participant "LearningController" as Controller
+participant "ConceptExtractionService" as Service
+participant "CourseMaterialService" as Material
+participant "PromptBuilder" as Prompt
+participant "LlmClient" as Llm
+participant "StructuredResponseParser" as Parser
+Student -> Controller: request concepts
+Controller -> Service: extract(course, document)
+Service -> Material: validate ownership/readiness and load ordered chunks
+Service -> Prompt: buildConceptExtractionPrompt
+Service -> Llm: checkAvailability/generate
+Service -> Parser: parse structured JSON
+Service -> Service: validate sources and deduplicate names
+Service --> Controller: ExtractedConcept list
+Controller --> Student: escaped concepts and source metadata
+@enduml

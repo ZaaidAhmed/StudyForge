@@ -1,0 +1,43 @@
+@startuml
+left to right direction
+actor Student
+actor "LLM Service" as LLM
+rectangle "StudyForge AI" {
+  usecase "UC01 Manage Course" as UC01
+  usecase "UC02 Import Course Material" as UC02
+  usecase "UC03 Search Course Material" as UC03
+  usecase "UC04 Ask Grounded Question" as UC04
+  usecase "UC05 Summarize Material" as UC05
+  usecase "UC06 Extract Concepts" as UC06
+  usecase "UC07 Generate and Review Flashcards" as UC07
+  usecase "UC08 Generate Quiz" as UC08
+  usecase "UC09 Take and Grade Quiz" as UC09
+  usecase "UC10 Explain Incorrect Answer" as UC10
+  usecase "UC11 View Progress / Weak Topics" as UC11
+  usecase "UC12 Generate Study Plan" as UC12
+  usecase "UC13 Get Adaptive Recommendation" as UC13
+  usecase "UC14 View Learning History" as UC14
+}
+Student --> UC01
+Student --> UC02
+Student --> UC03
+Student --> UC04
+Student --> UC05
+Student --> UC06
+Student --> UC07
+Student --> UC08
+Student --> UC09
+Student --> UC10
+Student --> UC11
+Student --> UC12
+Student --> UC13
+Student --> UC14
+LLM --> UC04
+LLM --> UC05
+LLM --> UC06
+LLM --> UC07
+LLM --> UC08
+LLM --> UC10
+LLM --> UC12
+LLM --> UC13
+@enduml

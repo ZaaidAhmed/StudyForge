@@ -1,0 +1,1 @@
+package ca.yorku.eecs3311.coursepilot.application.agent; import java.util.*; public record AgentPlan(AgentIntent intent,List<AgentPlanStep> steps){public AgentPlan{steps=List.copyOf(steps);}} record AgentPlanStep(String tool,Map<String,String> parameters){AgentPlanStep{parameters=Map.copyOf(parameters);}} 

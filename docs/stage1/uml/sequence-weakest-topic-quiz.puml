@@ -1,0 +1,36 @@
+@startuml
+title SD03 - Generate Quiz on a Topic
+actor Student
+participant QuizController as UI
+participant StudyAgentFacade as Facade
+participant AgentCoordinator as Coord
+participant ProgressTool as ProgressTool
+participant ProgressService as Progress
+participant CourseSearchTool as SearchTool
+participant MaterialSearchService as Search
+participant QuizService as Quiz
+participant PromptBuilder as Prompts
+participant LlmClient as LLM
+participant StructuredResponseParser as Parser
+participant QuizRepository as Quizzes
+Student -> UI: generateQuiz(course, topic?)
+UI -> Facade: ask(request)
+Facade -> Coord: coordinate(request)
+Coord -> ProgressTool: execute(context)
+ProgressTool -> Progress: findWeakTopics(courseId)
+Progress --> ProgressTool: weak topics
+Coord -> SearchTool: execute(topic)
+SearchTool -> Search: search(courseId, topic, topK)
+Search --> SearchTool: chunks
+Coord -> Quiz: generateQuiz(request, chunks)
+Quiz -> Prompts: groundedPrompt(chunks, quiz task)
+Quiz -> LLM: generate(request)
+LLM --> Quiz: structured response
+Quiz -> Parser: parseQuiz(response)
+alt invalid response
+  Quiz -> LLM: one controlled retry
+else valid response
+  Quiz -> Quizzes: save(quiz)
+  Quiz --> UI: persisted quiz
+end
+@enduml

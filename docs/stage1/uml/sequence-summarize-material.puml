@@ -1,0 +1,17 @@
+@startuml
+actor Student
+participant "LearningController" as Controller
+participant "SummarizationService" as Service
+participant "CourseMaterialService / CourseSearchService" as Material
+participant "PromptBuilder" as Prompt
+participant "LlmClient" as Llm
+participant "StructuredResponseParser" as Parser
+Student -> Controller: request summary
+Controller -> Service: summarizeDocument/course, document
+Service -> Material: validate ownership, load ordered chunks/retrieve topic
+Service -> Prompt: buildSummaryPrompt
+Service -> Llm: checkAvailability/generate
+Service -> Parser: parse structured response
+Service --> Controller: SummaryResult with validated sources
+Controller --> Student: escaped summary and source metadata
+@enduml

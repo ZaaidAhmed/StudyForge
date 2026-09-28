@@ -1,0 +1,138 @@
+@startuml
+skinparam packageStyle rectangle
+package "Web / CLI" {
+  class CourseController
+  class MaterialController
+  class MaterialChatController
+  class AskController
+  class LearningController
+  class FlashcardController
+  class QuizController
+  class ProgressController
+  class StudyPlanController
+  class RecommendationController
+  class HistoryController
+  class AgentController
+  class CoursePilotCommand
+}
+package "Application Facade" {
+  class StudyAgentFacade
+}
+package "Application Services" {
+  class CourseService
+  class CourseMaterialService
+  class CourseSearchService
+  class GroundedQuestionService
+  class SummarizationService
+  class ConceptExtractionService
+  class FlashcardGenerationService
+  class FlashcardReviewService
+  class QuizGenerationService
+  class QuizAttemptService
+  class WrongAnswerExplanationService
+  class ProgressService
+  class StudyPlanService
+  class RecommendationService
+  class LearningHistoryService
+}
+package "Agent Orchestration" {
+  class AgentCoordinator
+  class IntentAnalyzer
+  class TaskPlanner
+  class AgentPlanValidator
+  class AgentToolManager
+  class MemoryManager
+  class ResponseSynthesizer
+  class AgentPlan
+  class AgentTool
+}
+package "AI Boundary" {
+  interface LlmClient
+  class OllamaLlmAdapter
+  class PromptBuilder
+  class StructuredResponseParser
+  class GroundingContextBuilder
+}
+package "Domain" {
+  class Course
+  class CourseDocument
+  class DocumentChunk
+  class Flashcard
+  class FlashcardSource
+  class FlashcardReview
+  class Quiz
+  class QuizQuestion
+  class QuizSource
+  class QuizAttempt
+  class QuizResponse
+  class StudyPlan
+  class StudyPlanItem
+  enum FlashcardReviewRating
+}
+package "Persistence" {
+  interface CourseRepository
+  interface CourseDocumentRepository
+  interface DocumentChunkRepository
+  interface FlashcardRepository
+  interface FlashcardReviewRepository
+  interface QuizRepository
+  interface QuizAttemptRepository
+  interface StudyPlanRepository
+}
+StudyAgentFacade --> CourseService
+StudyAgentFacade --> CourseMaterialService
+StudyAgentFacade --> CourseSearchService
+StudyAgentFacade --> GroundedQuestionService
+StudyAgentFacade --> SummarizationService
+StudyAgentFacade --> ConceptExtractionService
+StudyAgentFacade --> FlashcardGenerationService
+StudyAgentFacade --> FlashcardReviewService
+StudyAgentFacade --> QuizGenerationService
+StudyAgentFacade --> QuizAttemptService
+StudyAgentFacade --> WrongAnswerExplanationService
+StudyAgentFacade --> AgentCoordinator
+AgentCoordinator --> IntentAnalyzer
+AgentCoordinator --> TaskPlanner
+AgentCoordinator --> AgentPlanValidator
+AgentCoordinator --> AgentToolManager
+AgentCoordinator --> MemoryManager
+AgentCoordinator --> ResponseSynthesizer
+AgentToolManager --> ProgressService
+AgentToolManager --> LearningHistoryService
+AgentToolManager --> RecommendationService
+AgentToolManager --> CourseSearchService
+AgentToolManager --> FlashcardGenerationService
+AgentToolManager --> QuizGenerationService
+AgentToolManager --> SummarizationService
+AgentToolManager --> StudyPlanService
+GroundedQuestionService --> CourseSearchService
+GroundedQuestionService --> LlmClient
+SummarizationService --> LlmClient
+ConceptExtractionService --> LlmClient
+FlashcardGenerationService --> LlmClient
+QuizGenerationService --> LlmClient
+WrongAnswerExplanationService --> LlmClient
+LlmClient <|.. OllamaLlmAdapter
+GroundedQuestionService --> GroundingContextBuilder
+FlashcardGenerationService --> GroundingContextBuilder
+QuizGenerationService --> GroundingContextBuilder
+Course "1" o-- "0..*" CourseDocument
+CourseDocument "1" *-- "1..*" DocumentChunk
+Flashcard "1" o-- "0..*" FlashcardSource
+Flashcard "1" o-- "0..*" FlashcardReview
+FlashcardReview --> FlashcardReviewRating
+Quiz "1" *-- "1..*" QuizQuestion
+QuizQuestion "1" o-- "0..*" QuizSource
+Quiz "1" o-- "0..*" QuizAttempt
+StudyPlan "1" *-- "1..*" StudyPlanItem
+CourseService --> CourseRepository
+CourseMaterialService --> CourseDocumentRepository
+CourseMaterialService --> DocumentChunkRepository
+FlashcardGenerationService --> FlashcardRepository
+FlashcardReviewService --> FlashcardRepository
+FlashcardReviewService --> FlashcardReviewRepository
+QuizGenerationService --> QuizRepository
+QuizAttemptService --> QuizRepository
+QuizAttemptService --> QuizAttemptRepository
+StudyPlanService --> StudyPlanRepository
+@enduml

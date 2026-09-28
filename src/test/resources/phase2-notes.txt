@@ -1,0 +1,4 @@
+Strategy Pattern notes
+
+The Strategy pattern encapsulates interchangeable algorithms behind a common interface.
+This text file is used for Phase 2 upload verification.
