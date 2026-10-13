@@ -1,5 +1,9 @@
 # StudyForge
 
+[![Ollama](https://img.shields.io/badge/Ollama-local%20LLM%20experimentation-000000?style=flat&logo=ollama&logoColor=white)](https://ollama.com/)
+[![Course project](https://img.shields.io/badge/Project-EECS%203311-6A1B9A?style=flat)](https://www.eecs.yorku.ca/)
+[![Status](https://img.shields.io/badge/Status-design%20stage-blue?style=flat)](https://github.com/ZaaidAhmed/StudyForge)
+
 StudyForge is a design-stage study-support project created for an EECS 3311 course project. The repository currently contains the system design proposal and supporting documentation rather than a production deployment.
 
 ## Current focus
