@@ -97,4 +97,3 @@ flowchart TB
 - Document pipeline: `coursepilot.infrastructure.document`.
 - AI provider: `coursepilot.infrastructure.ai.OllamaLlmAdapter` behind `LlmClient`.
 
-The application does not use embeddings, a vector database, OCR, cloud AI, authentication, microservices, or arbitrary agent shell/filesystem access. Ollama is optional; deterministic course, upload, search, grading, progress, planning, and history workflows remain available when it is offline.
