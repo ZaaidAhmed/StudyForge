@@ -29,29 +29,71 @@ This is an active course project. The repository is currently documentation-led;
 
 Zaaid Ahmed — [GitHub](https://github.com/ZaaidAhmed) · [Portfolio](https://zaaidahmed.netlify.app/)
 
-## Proposed architecture
+## Implemented architecture
 
-StudyForge is currently design-stage, so this describes the intended workflow rather than a deployed production system.
+The implemented system is a local-first Spring Boot modular monolith. The browser GUI and Picocli CLI share the same application facade and services; they do not implement separate business rules.
 
-    User
-      |
-      v
-    StudyForge study workflow
-      |
-      +--> Notes and study-material ingestion
-      |
-      +--> Prompt and context assembly
-      |
-      v
-    Ollama local language model
-      |
-      v
-    Generated explanations, questions, and study feedback
+```mermaid
+flowchart TB
+    learner([Learner])
+    web[Spring MVC + Thymeleaf]
+    cli[Picocli CLI]
 
-## How it would work
+    subgraph app[StudyForge application]
+        controllers[Web controllers]
+        commands[CLI commands]
+        facade[StudyAgentFacade]
+        services[Application services<br/>courses and materials<br/>search and grounded Q&A<br/>summaries and concepts<br/>flashcards and quizzes<br/>progress, plans, history, recommendations]
+        agent[AgentCoordinator<br/>intent -> plan -> validate -> tools]
+        evidence[GroundingContextBuilder<br/>bounded chunks and source IDs]
+        llm[LlmClient boundary<br/>PromptBuilder + StructuredResponseParser]
+        repos[Spring Data repositories]
+    end
 
-1. A learner provides study material or selects a study task.
-2. The application prepares relevant context and a structured prompt.
-3. Ollama runs the language model locally for experimentation.
-4. StudyForge returns a study-oriented response such as a question, explanation, or review prompt.
-5. The design can be evaluated and refined before implementation details are added.
+    files[(Local uploads<br/>PDF, TXT, Markdown)]
+    db[(File H2 database)]
+    ollama[Ollama HTTP API<br/>qwen3:4b by default]
+
+    learner --> web --> controllers --> facade
+    learner --> cli --> commands --> facade
+    facade --> services
+    facade --> agent
+    agent --> services
+    services --> evidence
+    evidence --> llm
+    llm --> ollama
+    services --> repos --> db
+    services --> files
+
+    classDef entry fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+    classDef core fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    class learner,web,cli,controllers,commands entry
+    class facade,services,agent,evidence,llm,repos core
+    class files,db data
+    class ollama external
+```
+
+### Runtime workflow
+
+1. A course is selected, then a PDF, TXT, or Markdown document is validated and stored with a generated safe filename.
+2. Text is extracted, normalized, split into overlapping chunks, and persisted with page/chunk metadata.
+3. Deterministic lexical retrieval selects course- or document-scoped evidence.
+4. `GroundingContextBuilder` bounds the context and assigns StudyForge-owned source IDs.
+5. `PromptBuilder` creates a source-only structured request for the provider-neutral `LlmClient`.
+6. `OllamaLlmAdapter` calls the local model. `StructuredResponseParser` validates JSON, required fields, and source references before display or persistence.
+7. Learning activity is stored in local H2 and reused by progress, history, recommendations, and bounded agent tools.
+
+### Actual implementation boundaries
+
+- Web entry points: `coursepilot.web` controllers and Thymeleaf templates.
+- CLI entry points: `coursepilot.cli` Picocli commands.
+- Shared facade: `coursepilot.application.StudyAgentFacade`.
+- Business workflows: `coursepilot.application.service`.
+- Agent orchestration: `coursepilot.application.agent` with whitelisted course-scoped tools.
+- Domain and persistence: `coursepilot.domain.model` and `coursepilot.domain.repository`.
+- Document pipeline: `coursepilot.infrastructure.document`.
+- AI provider: `coursepilot.infrastructure.ai.OllamaLlmAdapter` behind `LlmClient`.
+
+The application does not use embeddings, a vector database, OCR, cloud AI, authentication, microservices, or arbitrary agent shell/filesystem access. Ollama is optional; deterministic course, upload, search, grading, progress, planning, and history workflows remain available when it is offline.
