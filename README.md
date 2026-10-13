@@ -28,3 +28,30 @@ This is an active course project. The repository is currently documentation-led;
 ## Author
 
 Zaaid Ahmed — [GitHub](https://github.com/ZaaidAhmed) · [Portfolio](https://zaaidahmed.netlify.app/)
+
+## Proposed architecture
+
+StudyForge is currently design-stage, so this describes the intended workflow rather than a deployed production system.
+
+    User
+      |
+      v
+    StudyForge study workflow
+      |
+      +--> Notes and study-material ingestion
+      |
+      +--> Prompt and context assembly
+      |
+      v
+    Ollama local language model
+      |
+      v
+    Generated explanations, questions, and study feedback
+
+## How it would work
+
+1. A learner provides study material or selects a study task.
+2. The application prepares relevant context and a structured prompt.
+3. Ollama runs the language model locally for experimentation.
+4. StudyForge returns a study-oriented response such as a question, explanation, or review prompt.
+5. The design can be evaluated and refined before implementation details are added.
