@@ -5,6 +5,13 @@ import ca.yorku.eecs3311.coursepilot.application.dto.CreateCourseRequest;
 import ca.yorku.eecs3311.coursepilot.application.dto.UpdateCourseRequest;
 import ca.yorku.eecs3311.coursepilot.domain.model.Course;
 import ca.yorku.eecs3311.coursepilot.domain.repository.CourseRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.CourseDocumentRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.DocumentChunkRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardReviewRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.QuizAttemptRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.QuizRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.StudyPlanRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +23,26 @@ import java.util.Objects;
 @Transactional
 public class CourseService {
     private final CourseRepository courseRepository;
+    private final CourseDocumentRepository documentRepository;
+    private final DocumentChunkRepository chunkRepository;
+    private final FlashcardRepository flashcardRepository;
+    private final FlashcardReviewRepository reviewRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final QuizRepository quizRepository;
+    private final StudyPlanRepository studyPlanRepository;
 
-    public CourseService(CourseRepository courseRepository) {
+    public CourseService(CourseRepository courseRepository, CourseDocumentRepository documentRepository,
+                         DocumentChunkRepository chunkRepository, FlashcardRepository flashcardRepository,
+                         FlashcardReviewRepository reviewRepository, QuizAttemptRepository quizAttemptRepository,
+                         QuizRepository quizRepository, StudyPlanRepository studyPlanRepository) {
         this.courseRepository = courseRepository;
+        this.documentRepository = documentRepository;
+        this.chunkRepository = chunkRepository;
+        this.flashcardRepository = flashcardRepository;
+        this.reviewRepository = reviewRepository;
+        this.quizAttemptRepository = quizAttemptRepository;
+        this.quizRepository = quizRepository;
+        this.studyPlanRepository = studyPlanRepository;
     }
 
     public CourseResponse createCourse(CreateCourseRequest request) {
@@ -66,6 +90,15 @@ public class CourseService {
 
     public void deleteCourse(Long id) {
         Course course = findEntity(id);
+        reviewRepository.deleteAll(reviewRepository.findByCourseIdOrderByIdAsc(id));
+        flashcardRepository.deleteAll(flashcardRepository.findByCourseIdWithSources(id));
+        quizAttemptRepository.deleteAll(quizAttemptRepository.findByCourseId(id));
+        quizRepository.deleteAll(quizRepository.findByCourseId(id));
+        studyPlanRepository.deleteAll(studyPlanRepository.findByCourseId(id));
+        for (var document : documentRepository.findByCourseIdOrderByUploadedAtDesc(id)) {
+            chunkRepository.deleteAll(chunkRepository.findByDocumentIdOrderByChunkIndexAsc(document.getId()));
+        }
+        documentRepository.deleteAll(documentRepository.findByCourseIdOrderByUploadedAtDesc(id));
         courseRepository.delete(course);
     }
 
