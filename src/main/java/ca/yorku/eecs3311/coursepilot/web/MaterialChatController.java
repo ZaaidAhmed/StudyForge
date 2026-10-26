@@ -17,15 +17,17 @@ public class MaterialChatController {
     public MaterialChatController(StudyAgentFacade facade) { this.facade = facade; }
 
     @GetMapping
-    public String chat(@PathVariable Long courseId, @PathVariable Long documentId, Model model) {
-        populate(courseId, documentId, "", model);
+    public String chat(@PathVariable Long courseId, @PathVariable Long documentId,
+                       @RequestParam(defaultValue = "1") int page, Model model) {
+        populate(courseId, documentId, "", page, model);
         return "materials/detail";
     }
 
     @PostMapping
     public String ask(@PathVariable Long courseId, @PathVariable Long documentId,
-                      @RequestParam(defaultValue = "") String question, Model model) {
-        populate(courseId, documentId, question, model);
+                      @RequestParam(defaultValue = "") String question,
+                      @RequestParam(defaultValue = "1") int page, Model model) {
+        populate(courseId, documentId, question, page, model);
         try {
             model.addAttribute("answer", facade.askQuestionAboutMaterial(courseId, documentId, question));
         } catch (GroundedQuestionException | IllegalArgumentException exception) {
@@ -34,10 +36,16 @@ public class MaterialChatController {
         return "materials/detail";
     }
 
-    private void populate(Long courseId, Long documentId, String question, Model model) {
+    private void populate(Long courseId, Long documentId, String question, int page, Model model) {
         model.addAttribute("course", facade.getCourse(courseId));
-        model.addAttribute("material", facade.getMaterial(courseId, documentId));
+        var material = facade.getMaterial(courseId, documentId);
+        model.addAttribute("material", material);
+        model.addAttribute("materials", facade.listMaterials(courseId).stream()
+                .filter(candidate -> "READY".equals(candidate.processingStatus()) || candidate.id().equals(documentId))
+                .toList());
+        int pageCount = material.pageCount() == null ? 1 : Math.max(1, material.pageCount());
+        model.addAttribute("readerPage", Math.min(Math.max(1, page), pageCount));
         model.addAttribute("question", question);
-        model.addAttribute("activeNav", "materials");
+        model.addAttribute("activeNav", "studio");
     }
 }

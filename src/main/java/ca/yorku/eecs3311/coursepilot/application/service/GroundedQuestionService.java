@@ -4,6 +4,7 @@ import ca.yorku.eecs3311.coursepilot.application.ai.GroundedAnswerLlmResponse;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmAvailability;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmClient;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmRequest;
+import ca.yorku.eecs3311.coursepilot.application.ai.AiTimeoutException;
 import ca.yorku.eecs3311.coursepilot.application.ai.PromptBuilder;
 import ca.yorku.eecs3311.coursepilot.application.ai.StructuredResponseParser;
 import ca.yorku.eecs3311.coursepilot.application.dto.GroundedAnswer;
@@ -63,6 +64,8 @@ public class GroundedQuestionService {
         GroundedAnswerLlmResponse generated;
         try {
             generated = responseParser.parse(llmClient.generate(request).content(), GroundedAnswerLlmResponse.class);
+        } catch (AiTimeoutException exception) {
+            throw new GroundedQuestionException("AI answering timed out. Try again or use material search.", exception);
         } catch (RuntimeException exception) {
             throw new GroundedQuestionException("The AI response could not be processed safely.", exception);
         }

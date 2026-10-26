@@ -28,22 +28,28 @@ class MaterialChatControllerTest {
     void documentChatRendersSelectedMaterialContext() throws Exception {
         when(facade.getCourse(1L)).thenReturn(new CourseResponse(1L, "EECS3311", "Software Design", null, null, null, null));
         when(facade.getMaterial(1L, 7L)).thenReturn(material());
+        when(facade.listMaterials(1L)).thenReturn(java.util.List.of(material()));
         mockMvc.perform(get("/courses/1/materials/7/chat"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("materials/detail"))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Ask this PDF")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("solid.pdf")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("StudyForge Tutor")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("solid.pdf")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Split")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("My Notes")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Outline")));
     }
 
     @Test
     void documentChatKeepsQuestionWhenAiFails() throws Exception {
         when(facade.getCourse(1L)).thenReturn(new CourseResponse(1L, "EECS3311", "Software Design", null, null, null, null));
         when(facade.getMaterial(1L, 7L)).thenReturn(material());
+        when(facade.listMaterials(1L)).thenReturn(java.util.List.of(material()));
         when(facade.askQuestionAboutMaterial(1L, 7L, "What is SRP?"))
                 .thenThrow(new GroundedQuestionException("AI answering is currently unavailable."));
-        mockMvc.perform(post("/courses/1/materials/7/chat").param("question", "What is SRP?"))
+        mockMvc.perform(post("/courses/1/materials/7/chat").param("question", "What is SRP?").param("page", "4"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("What is SRP?")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Page 4 of 10")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("AI answering is currently unavailable.")));
     }
 

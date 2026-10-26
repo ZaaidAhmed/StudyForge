@@ -66,6 +66,24 @@ class CourseSearchServiceTest {
     }
 
     @Test
+    void acceptsConfiguredLimitBoundariesAndRejectsZero() {
+        when(courses.existsById(1L)).thenReturn(true);
+        when(chunks.findSearchableByCourseId(1L, ProcessingStatus.READY)).thenReturn(List.of());
+        assertThat(service.search(1L, "strategy", 1)).isEmpty();
+        assertThat(service.search(1L, "strategy", 20)).isEmpty();
+        assertThatThrownBy(() -> service.search(1L, "strategy", 0))
+                .hasMessageContaining("between 1 and 20");
+    }
+
+    @Test
+    void documentSearchDoesNotLeakAnotherCourseMaterial() {
+        when(courses.existsById(2L)).thenReturn(true);
+        when(chunks.findSearchableByCourseIdAndDocumentId(2L, 10L, ProcessingStatus.READY)).thenReturn(List.of());
+        assertThatThrownBy(() -> service.searchDocument(2L, 10L, "strategy", 5))
+                .isInstanceOf(DocumentNotFoundException.class);
+    }
+
+    @Test
     void returnsNoResultsForIrrelevantQueriesAndNoMaterials() {
         when(courses.existsById(1L)).thenReturn(true);
         when(chunks.findSearchableByCourseId(1L, ProcessingStatus.READY)).thenReturn(List.of());
