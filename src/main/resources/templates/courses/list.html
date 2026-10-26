@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Courses')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside>
-<main class="content"><div class="page-heading"><div><p class="eyebrow">Course management</p><h1>Your courses</h1><p class="lede">Keep each course, its materials, and future study progress together.</p></div><a class="button primary" th:href="@{/courses/new}">＋ New course</a></div>
-    <div th:if="${successMessage}" class="alert success" th:text="${successMessage}"></div><div th:if="${errorMessage}" class="alert error" th:text="${errorMessage}"></div>
-    <section th:if="${#lists.isEmpty(courses)}" class="panel empty-state"><div class="empty-icon">+</div><h2>No courses yet</h2><p>Create a course to begin your CoursePilot workspace.</p><a class="button secondary" th:href="@{/courses/new}">Create course</a></section>
-    <section th:unless="${#lists.isEmpty(courses)}" class="course-grid"><a class="course-card" th:each="course : ${courses}" th:href="@{/courses/{id}(id=${course.id})}"><span class="course-code" th:text="${course.courseCode}">EECS3311</span><h2 th:text="${course.name}">Software Design</h2><p th:text="${course.description ?: 'No description added yet.'}">Description</p><span class="card-link">Open dashboard →</span></a></section>
+<body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main id="main-content" class="content page-shell">
+    <section class="page-intro"><div class="page-intro-copy"><p class="eyebrow">Course management</p><h1>Your courses</h1><p class="lede">Each course keeps its materials, grounded answers, and study activity together.</p></div><div class="page-primary-action"><a class="button primary" th:href="@{/courses/new}">New course</a></div></section>
+    <div th:if="${successMessage}" class="alert success" role="status" th:text="${successMessage}"></div><div th:if="${errorMessage}" class="alert error" role="alert" th:text="${errorMessage}"></div>
+    <section th:if="${#lists.isEmpty(courses)}" class="panel empty-state state-panel"><div class="empty-icon">+</div><div class="state-copy"><h2>No courses yet</h2><p>Create a course to begin organizing learning materials.</p><a class="button primary" th:href="@{/courses/new}">Create course</a></div></section>
+    <section th:unless="${#lists.isEmpty(courses)}" class="course-grid" aria-label="Your courses"><a class="course-card" th:each="course : ${courses}" th:href="@{/courses/{id}(id=${course.id})}"><span class="course-code" th:text="${course.courseCode}">EECS3311</span><h2 th:text="${course.name}">Software Design</h2><p th:text="${course.description ?: 'Open this course to add material and start studying.'}">Description</p><span class="card-link">Open course →</span></a></section>
 </main></body></html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Insights')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main id="main-content" class="content page-shell workspace-hub">
+    <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
+    <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
+    <h1>Insights</h1>
+    <p class="lede">See what you understand, what to study next, and how your course activity is changing.</p>
+    <section class="panel insight-summary" aria-labelledby="summary-heading">
+        <div><p class="eyebrow">Current signal</p><h2 id="summary-heading" th:text="${progress.hasActivity() ? progress.overallScore + '% · ' + progress.overallStatus : 'Not started'}">Not started</h2><p class="muted" th:text="${progress.hasActivity() ? progress.activityCount + ' activities recorded' : 'Review a card or take a quiz to begin.'}">No activity yet</p></div>
+        <div><p class="eyebrow">Next step</p><h2 th:text="${recommendation.label}">Review flashcards</h2><a class="button primary" th:href="${recommendation.href}">Continue</a></div>
+    </section>
+    <div class="hub-grid insight-hub-grid">
+        <article class="panel hub-card"><p class="eyebrow">F05–F06</p><h2>Summaries and concepts</h2><p>Turn ready documents into concise summaries and source-linked concepts.</p><div class="hub-actions"><a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Choose a document</a><a class="text-link" th:href="@{/courses/{id}/concepts(id=${course.id})}">Browse concepts</a></div></article>
+        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/progress(id=${course.id})}"><p class="eyebrow">F11</p><h2>Progress</h2><p>Review mastery signals and weak topics.</p></a>
+        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/study-plan(id=${course.id})}"><p class="eyebrow">F12</p><h2>Study plan</h2><p th:text="${planCount + ' saved plan(s)'}">0 saved plans</p></a>
+        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/recommendation(id=${course.id})}"><p class="eyebrow">F13</p><h2>Next step</h2><p>See the transparent recommendation for this course.</p></a>
+        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/agent(id=${course.id})}"><p class="eyebrow">F13</p><h2>Study assistant</h2><p>Ask for a bounded, course-scoped study task.</p></a>
+        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/history(id=${course.id})}"><p class="eyebrow">F14</p><h2>Learning history</h2><p th:text="${historyCount + ' recorded event(s)'}">0 recorded events</p></a>
+    </div>
+</main>
+</body>
+</html>

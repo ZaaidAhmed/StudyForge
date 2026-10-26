@@ -1,25 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
-<body>
-<header th:replace="~{fragments/layout :: topbar}"></header>
-<aside th:replace="~{fragments/layout :: sidebar}"></aside>
-<main class="content">
-    <section class="hero">
-        <p class="eyebrow">Adaptive study workspace</p>
-        <h1>Build your learning cockpit.</h1>
-        <p class="lede">Choose a course, upload its materials, search the evidence, and ask grounded questions about what you are learning.</p>
-        <a class="button primary" th:href="@{/courses}">Open your courses</a> <a class="button secondary" th:href="@{/courses/new}">Create a course</a>
+<body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main id="main-content" class="content page-shell">
+    <section class="page-intro"><div class="page-intro-copy"><p class="eyebrow">Study workspace</p><h1>Choose what to study</h1><p class="lede">Open a course to read its material, search for evidence, or ask a grounded question.</p></div><div class="page-primary-action"><a class="button primary" th:href="@{/courses}">View courses</a></div></section>
+    <section class="stats-grid" aria-label="Workspace overview"><article class="stat-card"><span class="stat-label">Courses</span><strong th:text="${courseCount}">0</strong><span class="muted">organized here</span></article><article class="stat-card"><span class="stat-label">Grounded Q&amp;A</span><strong>Ready</strong><span class="muted">Uses only uploaded course material</span></article></section>
+    <section class="panel"><div class="section-heading"><div><p class="eyebrow">Your courses</p><h2>Choose a course</h2><p class="muted">Each course keeps its materials, evidence, and study activity together.</p></div><a class="button secondary" th:href="@{/courses/new}">Create course</a></div>
+        <div th:if="${#lists.isEmpty(courses)}" class="empty-state state-panel"><div class="empty-icon">+</div><div class="state-copy"><h3>Create your first course</h3><p>Your course keeps uploaded materials and study activity together.</p><a class="button primary" th:href="@{/courses/new}">Create course</a></div></div>
+        <div th:unless="${#lists.isEmpty(courses)}" class="course-grid"><a class="course-card" th:each="course : ${courses}" th:href="@{/courses/{id}(id=${course.id})}"><span class="course-code" th:text="${course.courseCode}">EECS3311</span><h3 th:text="${course.name}">Software Design</h3><p th:text="${course.description ?: 'Open this course to add material and start studying.'}">Description</p><span class="card-link">Open course</span></a></div>
     </section>
-    <section class="stats-grid" aria-label="Course overview">
-        <article class="stat-card"><span class="stat-label">Courses</span><strong th:text="${courseCount}">0</strong><span class="muted">organized here</span></article>
-        <article class="stat-card"><span class="stat-label">Grounded Q&amp;A</span><strong>Ready</strong><span class="muted">Ask questions from course material</span></article>
-    </section>
-    <section class="panel">
-        <div class="section-heading"><div><p class="eyebrow">Your workspace</p><h2>Recent courses</h2></div><a class="text-link" th:href="@{/courses}">View all</a></div>
-        <div th:if="${#lists.isEmpty(courses)}" class="empty-state"><div class="empty-icon">+</div><h3>No courses yet</h3><p>Create your first course to start organizing learning materials.</p><a class="button secondary" th:href="@{/courses/new}">Add your first course</a></div>
-        <div th:unless="${#lists.isEmpty(courses)}" class="course-grid"><a class="course-card" th:each="course : ${courses}" th:href="@{/courses/{id}(id=${course.id})}"><span class="course-code" th:text="${course.courseCode}">EECS3311</span><h3 th:text="${course.name}">Software Design</h3><p th:text="${course.description ?: 'No description added yet.'}">Description</p></a></div>
-    </section>
-</main>
-</body>
-</html>
+</main></body></html>

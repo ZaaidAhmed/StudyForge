@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Practice')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main id="main-content" class="content page-shell workspace-hub">
+    <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
+    <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
+    <h1>Practice</h1>
+    <p class="lede">Use retrieval practice to strengthen what you learned from this course’s materials.</p>
+    <section class="hub-grid practice-hub-grid">
+        <article class="panel hub-card hub-card-primary"><p class="eyebrow">F07</p><h2>Flashcards</h2><p>Create source-linked cards, review them, and record your confidence.</p><p class="hub-count" th:text="${flashcardCount + ' saved cards'}">0 saved cards</p><a class="button primary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Create flashcards</a><a class="text-link" th:href="@{/courses/{id}/flashcards/review(id=${course.id})}">Review saved cards</a></article>
+        <article class="panel hub-card hub-card-primary"><p class="eyebrow">F08–F10</p><h2>Quizzes</h2><p>Generate grounded questions, take a quiz, and review explanations for missed answers.</p><p class="hub-count" th:text="${quizCount + ' saved quizzes'}">0 saved quizzes</p><a class="button primary" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Create a quiz</a><a class="text-link" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Review saved quizzes</a></article>
+    </section>
+    <section class="panel hub-secondary"><div><h2>Start with evidence</h2><p class="muted">Practice content is generated only from ready course documents.</p></div><a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Check materials</a></section>
+</main>
+</body>
+</html>

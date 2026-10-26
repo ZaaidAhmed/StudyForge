@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Course tools')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main id="main-content" class="content page-shell workspace-hub">
+    <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
+    <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
+    <h1>Course tools</h1>
+    <p class="lede">Everything for this course in one place. Start with materials, then move into Study Studio and practice.</p>
+
+    <section class="hub-hero panel prominent" aria-labelledby="workflow-heading">
+        <div>
+            <p class="eyebrow">Recommended workflow</p>
+            <h2 id="workflow-heading">Materials → Study Studio → Practice</h2>
+            <p class="muted" th:text="${readyMaterialCount + ' ready document(s) available for grounded study.'}">Ready materials</p>
+        </div>
+        <a class="button primary" th:href="@{/courses/{id}/materials(id=${course.id})}">Manage materials</a>
+    </section>
+
+    <div class="hub-grid">
+        <article class="panel hub-card">
+            <span class="hub-step">1</span><h2>Materials</h2>
+            <p>Upload documents, check processing status, and search course evidence.</p>
+            <a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Open materials</a>
+        </article>
+        <article class="panel hub-card">
+            <span class="hub-step">2</span><h2>Study Studio</h2>
+            <p>Read a ready document and ask questions with source-backed answers.</p>
+            <a class="button secondary" th:href="@{/courses/{id}/studio(id=${course.id})}">Open Study Studio</a>
+        </article>
+        <article class="panel hub-card">
+            <span class="hub-step">3</span><h2>Practice</h2>
+            <p>Turn understanding into flashcards and quizzes grounded in your material.</p>
+            <a class="button secondary" th:href="@{/courses/{id}/practice(id=${course.id})}">Open practice</a>
+        </article>
+        <article class="panel hub-card">
+            <span class="hub-step">4</span><h2>Ask this course</h2>
+            <p>Ask a course-wide question and inspect the evidence used in the answer.</p>
+            <a class="button secondary" th:href="@{/courses/{id}/ask(id=${course.id})}">Ask about this course</a>
+        </article>
+    </div>
+
+    <section class="panel hub-secondary" aria-labelledby="assistant-heading">
+        <div><h2 id="assistant-heading">Need help choosing a next step?</h2><p class="muted">Use the bounded study assistant for a course-scoped recommendation or task.</p></div>
+        <a class="button ghost" th:href="@{/courses/{id}/agent(id=${course.id})}">Open study assistant</a>
+    </section>
+</main>
+</body>
+</html>

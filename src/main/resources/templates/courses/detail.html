@@ -2,10 +2,84 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${course.courseCode})}"></head>
 <body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside>
-<main class="content"><a class="back-link" th:href="@{/courses}">Back to courses</a>
-<div class="detail-hero"><div><span class="course-code" th:text="${course.courseCode}">EECS3311</span><h1 th:text="${course.name}">Software Design</h1><p class="lede" th:text="${course.description ?: 'Your course workspace for materials, search, and grounded questions.'}">Course workspace</p></div><div class="detail-actions"><a class="button secondary" th:href="@{/courses/{id}/edit(id=${course.id})}">Edit course</a><form th:action="@{/courses/{id}/delete(id=${course.id})}" method="post"><button class="button danger" type="submit">Delete</button></form></div></div>
-<div th:if="${successMessage}" class="alert success" th:text="${successMessage}"></div>
-<section class="workflow-grid" aria-labelledby="workflow-heading"><h2 id="workflow-heading" class="sr-only">Course workflow</h2><article class="panel workflow-card"><span class="eyebrow">Step 1</span><h3>Upload materials</h3><p>Add lecture PDFs, text notes, or Markdown so StudyForge has course-specific evidence.</p><a class="button primary" th:href="@{/courses/{id}/materials(id=${course.id})}">Manage materials</a></article><article class="panel workflow-card"><span class="eyebrow">Step 2</span><h3>Search your course</h3><p>Find relevant chunks and source pages using deterministic course-scoped search.</p><a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Search materials</a></article><article class="panel workflow-card"><span class="eyebrow">Step 3</span><h3>Ask StudyForge</h3><p>Ask a question and receive an answer grounded only in this course's uploaded material.</p><a class="button secondary" th:href="@{/courses/{id}/ask(id=${course.id})}">Ask about this course</a></article><article class="panel workflow-card"><span class="eyebrow">Step 4</span><h3>Review flashcards</h3><p>Generate source-linked cards from a ready document and review them with four deterministic ratings.</p><a class="button secondary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Open flashcards</a></article></section>
-<section class="stats-grid" aria-label="Course overview"><article class="stat-card"><span class="stat-label">Materials</span><strong>Course-only</strong><span class="muted">Upload and search from the workspace</span></article><article class="stat-card"><span class="stat-label">Grounded Q&amp;A</span><strong>Available</strong><span class="muted">Requires relevant uploaded material</span></article><article class="stat-card"><span class="stat-label">Exam date</span><strong th:text="${course.examDate ?: 'Not set'}">Not set</strong><span class="muted">Optional course detail</span></article></section>
-<section class="panel empty-state"><p class="eyebrow">Your next step</p><h2>Start with course material.</h2><p>Upload a source first, search it to confirm the right evidence is available, then ask a grounded question.</p><a class="button primary" th:href="@{/courses/{id}/materials(id=${course.id})}">Upload your first material</a></section>
+<main id="main-content" class="content page-shell course-overview">
+    <div class="overview-heading">
+        <div>
+            <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
+            <h1 th:text="${course.name}">Software Design</h1>
+            <p class="lede" th:text="${course.description ?: 'Your course workspace for materials, grounded answers, and focused practice.'}">Course description</p>
+        </div>
+        <div class="overview-actions">
+            <a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Manage materials</a>
+            <a class="button primary" th:href="@{/courses/{id}/studio(id=${course.id})}">Open Study Studio</a>
+        </div>
+    </div>
+    <div th:if="${successMessage}" class="alert success" role="status" th:text="${successMessage}"></div>
+
+    <section class="next-action panel" aria-labelledby="next-action-heading">
+        <div class="next-action-copy">
+            <p class="eyebrow">Recommended next step</p>
+            <span class="recommendation-tag" th:text="${workspaceState}">READY</span>
+            <h2 id="next-action-heading" th:text="${primaryActionLabel}">Open Study Studio</h2>
+            <p class="next-action-reason" th:text="${primaryActionReason}">Read a ready document and ask questions grounded in this course.</p>
+            <p class="muted secondary-recommendation" th:if="${recommendation != null}">Learning recommendation: <span th:text="${recommendation.reason}">Start a review to build a learning signal.</span></p>
+            <p class="evidence-note"><span class="evidence-indicator" aria-hidden="true"></span><span th:text="${readyMaterialCount + ' ready · ' + processingMaterialCount + ' processing'}">Ready course documents</span></p>
+        </div>
+        <div class="next-action-buttons">
+            <a class="button primary" th:href="${primaryActionHref}" th:text="${primaryActionLabel}">Open Study Studio</a>
+            <a class="button secondary" th:href="@{/courses/{id}/tools(id=${course.id})}">View course tools</a>
+        </div>
+    </section>
+
+    <section class="stats-grid overview-stats" aria-label="Course study summary">
+        <article class="stat-card">
+            <span class="stat-label">Materials</span>
+            <strong th:text="${materialCount}">0</strong>
+            <span class="muted" th:text="${readyMaterialCount + ' ready to study'}">0 ready to study</span>
+        </article>
+        <article class="stat-card">
+            <span class="stat-label">Indexed chunks</span>
+            <strong th:text="${indexedChunkCount}">0</strong>
+            <span class="muted">Searchable course evidence</span>
+        </article>
+        <article class="stat-card">
+            <span class="stat-label">Mastery</span>
+            <strong th:if="${progress.hasActivity()}" th:text="${#numbers.formatDecimal(progress.overallScore, 1, 1) + '%'}">0%</strong>
+            <strong th:unless="${progress.hasActivity()}">Not started</strong>
+            <span class="muted" th:text="${progress.hasActivity() ? progress.overallStatus + ' · ' + progress.activityCount + ' activities' : 'Review a card or take a quiz to begin'}">Review a card or take a quiz to begin</span>
+        </article>
+        <article class="stat-card">
+            <span class="stat-label">Exam date</span>
+            <strong th:text="${course.examDate != null ? course.examDate : 'Not set'}">Not set</strong>
+            <span class="muted">Course schedule</span>
+        </article>
+    </section>
+
+    <section class="panel course-question-panel" aria-labelledby="course-question-heading">
+        <div class="course-question-heading">
+            <div>
+                <p class="eyebrow">Grounded course tutor</p>
+                <h2 id="course-question-heading">What do you want to understand?</h2>
+                <p class="muted">Answers are based on relevant evidence from this course.</p>
+            </div>
+            <a class="text-link" th:href="@{/courses/{id}/ask(id=${course.id})}">Open tutor</a>
+        </div>
+        <form class="overview-question-form" data-progress-operation="question" method="post" th:action="@{/courses/{id}/ask(id=${course.id})}">
+            <label class="sr-only" for="overview-question">Ask a question about this course</label>
+            <textarea id="overview-question" name="question" rows="2" maxlength="1000" required placeholder="Ask about a concept, lecture, or definition..."></textarea>
+            <button class="button primary" type="submit">Ask StudyForge</button>
+        </form>
+        <p class="muted question-guidance" th:if="${readyMaterialCount == 0}">Upload course material first so answers can cite supporting evidence.</p>
+    </section>
+
+    <section class="panel overview-tools" aria-labelledby="tools-heading">
+        <div class="section-heading">
+            <div><p class="eyebrow">Your study toolkit</p><h2 id="tools-heading">Choose a way to study</h2></div>
+            <a class="text-link" th:href="@{/courses/{id}/insights(id=${course.id})}">View insights</a>
+        </div>
+        <div class="tool-grid overview-hub-links">
+            <article class="panel tool-card"><h3>Practice</h3><p>Flashcards and quizzes from ready course material.</p><a class="button secondary" th:href="@{/courses/{id}/practice(id=${course.id})}">Open practice</a></article>
+            <article class="panel tool-card"><h3>Insights</h3><p>Summaries, concepts, progress, plans, recommendations, and history.</p><a class="button secondary" th:href="@{/courses/{id}/insights(id=${course.id})}">Open insights</a></article>
+        </div>
+    </section>
 </main></body></html>
