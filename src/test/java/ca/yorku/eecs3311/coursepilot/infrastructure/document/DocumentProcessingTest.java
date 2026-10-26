@@ -56,4 +56,27 @@ class DocumentProcessingTest {
         assertThatThrownBy(() -> validator.validate("notes.txt", new byte[11]))
                 .hasMessageContaining("10 MB");
     }
+
+    @Test
+    void validatesProvidedContentTypeButAllowsGenericBrowserAndCliTypes() {
+        var validator = new DocumentValidator(100);
+        assertThat(validator.validate("notes.md", "text/markdown; charset=UTF-8", new byte[]{1})).isEqualTo("md");
+        assertThat(validator.validate("notes.txt", "application/octet-stream", new byte[]{1})).isEqualTo("txt");
+        assertThat(validator.validate("notes.txt", null, new byte[]{1})).isEqualTo("txt");
+        assertThatThrownBy(() -> validator.validate("notes.pdf", "text/plain", new byte[]{1}))
+                .hasMessageContaining("content type");
+    }
+
+    @Test
+    void rejectsHiddenAndTraversalLikeNames() {
+        var validator = new DocumentValidator(100);
+        assertThatThrownBy(() -> validator.validate(".txt", new byte[]{1}))
+                .hasMessageContaining("Unsupported file type");
+        assertThatThrownBy(() -> validator.validate("folder\\notes.txt", new byte[]{1}))
+                .hasMessageContaining("filename");
+        assertThatThrownBy(() -> validator.validate("notes\".txt", new byte[]{1}))
+                .hasMessageContaining("unsupported characters");
+        assertThatThrownBy(() -> validator.validate("notes\r\n.txt", new byte[]{1}))
+                .hasMessageContaining("unsupported characters");
+    }
 }

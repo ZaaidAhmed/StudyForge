@@ -12,7 +12,18 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.Duration;
 
 @Controller
 @RequestMapping("/courses/{courseId}/materials")
@@ -34,8 +45,13 @@ public class MaterialController {
     @GetMapping("/{documentId}")
     public String detail(@PathVariable Long courseId, @PathVariable Long documentId, Model model) {
         model.addAttribute("course", facade.getCourse(courseId));
-        model.addAttribute("material", facade.getMaterial(courseId, documentId));
-        model.addAttribute("activeNav", "materials");
+        var material = facade.getMaterial(courseId, documentId);
+        model.addAttribute("material", material);
+        model.addAttribute("materials", facade.listMaterials(courseId).stream()
+                .filter(candidate -> "READY".equals(candidate.processingStatus()) || candidate.id().equals(documentId))
+                .toList());
+        model.addAttribute("readerPage", 1);
+        model.addAttribute("activeNav", "studio");
         return "materials/detail";
     }
 
@@ -46,7 +62,32 @@ public class MaterialController {
         MediaType mediaType;
         try { mediaType = material.contentType() == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(material.contentType()); }
         catch (IllegalArgumentException exception) { mediaType = MediaType.APPLICATION_OCTET_STREAM; }
-        return ResponseEntity.ok().contentType(mediaType).header("Content-Disposition", "inline; filename=\"" + material.originalFilename() + "\"").body(resource);
+        String downloadName = material.originalFilename() == null ? "material" : material.originalFilename().replaceAll("[\\r\\n\"]", "_");
+        return ResponseEntity.ok().contentType(mediaType).header("Content-Disposition", "inline; filename=\"" + downloadName + "\"").body(resource);
+    }
+
+    /** Render one PDF page as an image so the application owns the reader UI. */
+    @GetMapping("/{documentId}/page")
+    public ResponseEntity<byte[]> page(@PathVariable Long courseId, @PathVariable Long documentId,
+                                       @RequestParam(defaultValue = "1") int page) {
+        var material = facade.getMaterial(courseId, documentId);
+        if (!"pdf".equalsIgnoreCase(material.fileType())) return ResponseEntity.notFound().build();
+        if (page < 1 || (material.pageCount() != null && page > material.pageCount())) {
+            return ResponseEntity.badRequest().build();
+        }
+        try (var input = facade.loadMaterialFile(courseId, documentId).getInputStream();
+             PDDocument document = Loader.loadPDF(input.readAllBytes())) {
+            if (page > document.getNumberOfPages()) return ResponseEntity.badRequest().build();
+            PDFRenderer renderer = new PDFRenderer(document);
+            BufferedImage renderedPage = renderer.renderImageWithDPI(page - 1, 120, ImageType.RGB);
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ImageIO.write(renderedPage, "png", output);
+            return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG)
+                    .cacheControl(CacheControl.maxAge(Duration.ofMinutes(10)).cachePrivate())
+                    .body(output.toByteArray());
+        } catch (IOException exception) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/search")

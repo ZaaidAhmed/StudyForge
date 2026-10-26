@@ -56,7 +56,7 @@ public class CourseMaterialService {
     public ImportResult importMaterial(Long courseId, String filename, String contentType, byte[] content) {
         var course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException("Course with id '" + courseId + "' was not found."));
-        String extension = validator.validate(filename, content);
+        String extension = validator.validate(filename, contentType, content);
         String hash = hashService.sha256(content);
         if (documentRepository.findByCourseIdAndSha256Hash(courseId, hash).isPresent()) {
             throw new DuplicateDocumentException("This material has already been uploaded to this course.");
