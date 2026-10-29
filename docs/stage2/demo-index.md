@@ -4,7 +4,7 @@ Add public video links and timestamps after recording the actual application. Ev
 
 | Feature | GUI demonstration | CLI demonstration | Timestamp | Status |
 |---|---|---|---|---|
-| F01 Course workspace | [Watch online](https://youtu.be/Uq1Muw7ICKc) · [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/StudyForge_F01_GUI_CLI.mp4) | Included in video: `course create/list/show` | 00:00 | Uploaded |
+| F01 Course workspace | [Watch online](https://youtu.be/Uq1Muw7ICKc) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/StudyForge_F01_GUI_CLI.mp4) | Included in video: `course create/list/show` | 00:00 | Uploaded |
 | F02 Material import | Pending | `material add/list/show` pending | Pending | Pending recording |
 | F03 Material search | Pending | `material search` pending | Pending | Pending recording |
 | F04 Grounded Q&A | Pending | `ask` pending | Pending | Pending recording |
