@@ -57,6 +57,26 @@ class OllamaLlmAdapterTest {
                 .hasMessage("AI integration is disabled.");
     }
 
+    @Test
+    void usesTheProviderSpecificEndpointWhenConfigured() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/tags", exchange -> {
+            byte[] response = "{\"models\":[]}".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+        try {
+            AiProperties properties = properties("http://127.0.0.1:1");
+            properties.setOllamaBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+            OllamaLlmAdapter adapter = new OllamaLlmAdapter(properties, new ObjectMapper());
+            assertThat(adapter.checkAvailability().status()).isEqualTo(LlmAvailabilityStatus.AVAILABLE);
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private AiProperties properties(String baseUrl) {
         AiProperties properties = new AiProperties();
         properties.setBaseUrl(baseUrl);

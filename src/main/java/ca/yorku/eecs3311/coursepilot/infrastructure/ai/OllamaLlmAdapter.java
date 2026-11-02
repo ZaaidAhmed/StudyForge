@@ -4,12 +4,13 @@ import ca.yorku.eecs3311.coursepilot.application.ai.LlmAvailability;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmAvailabilityStatus;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmClient;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmClientException;
+import ca.yorku.eecs3311.coursepilot.application.ai.AiTimeoutException;
+import ca.yorku.eecs3311.coursepilot.application.ai.AiFailureCategory;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmRequest;
 import ca.yorku.eecs3311.coursepilot.application.ai.LlmResponse;
 import ca.yorku.eecs3311.coursepilot.config.AiProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
@@ -17,10 +18,10 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.Map;
 
-@Service
 public class OllamaLlmAdapter implements LlmClient {
     private final AiProperties properties;
     private final ObjectMapper objectMapper;
@@ -57,23 +58,25 @@ public class OllamaLlmAdapter implements LlmClient {
         long started = System.nanoTime();
         Map<String, Object> options = Map.of("temperature", request.temperature());
         OllamaGenerateRequest payload = new OllamaGenerateRequest(properties.getModel(), request.userPrompt(),
-                request.systemPrompt(), false, options, request.structuredOutputExpected() ?
+                request.systemPrompt(), false, false, options, request.structuredOutputExpected() ?
                 (request.format() == null ? "json" : request.format()) : null);
         try {
             String json = objectMapper.writeValueAsString(payload);
             HttpResponse<String> response = httpClient.send(request("/api/generate", "POST", json),
                     HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new LlmClientException("AI service returned HTTP " + response.statusCode() + ".");
+                throw new LlmClientException("AI service returned HTTP " + response.statusCode() + ".", AiFailureCategory.AI_PROVIDER_ERROR);
             }
             OllamaGenerateResponse generated = objectMapper.readValue(response.body(), OllamaGenerateResponse.class);
             if (generated.response() == null || generated.response().isBlank()) {
-                throw new LlmClientException("AI service returned an empty response.");
+                throw new LlmClientException("AI service returned an empty response.", AiFailureCategory.AI_EMPTY_RESPONSE);
             }
             String model = generated.model() == null || generated.model().isBlank() ? properties.getModel() : generated.model();
             return new LlmResponse(generated.response(), model, Duration.ofNanos(System.nanoTime() - started).toMillis());
         } catch (LlmClientException exception) {
             throw exception;
+        } catch (HttpTimeoutException exception) {
+            throw new AiTimeoutException("AI request timed out. Try again or use material search.", exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new LlmClientException("AI request was interrupted.", exception);
@@ -90,13 +93,13 @@ public class OllamaLlmAdapter implements LlmClient {
     }
 
     private URI uri(String path) {
-        try { return new URI(properties.getBaseUrl().replaceAll("/+$", "") + path); }
+        try { return new URI(properties.getProviderBaseUrl().replaceAll("/+$", "") + path); }
         catch (URISyntaxException exception) { throw new LlmClientException("AI provider base URL is invalid.", exception); }
     }
 
     private boolean isConfigured() {
-        return "ollama".equalsIgnoreCase(properties.getProvider()) && properties.getBaseUrl() != null
-                && !properties.getBaseUrl().isBlank() && properties.getModel() != null && !properties.getModel().isBlank();
+        return "ollama".equalsIgnoreCase(properties.getProvider()) && properties.getProviderBaseUrl() != null
+                && !properties.getProviderBaseUrl().isBlank() && properties.getModel() != null && !properties.getModel().isBlank();
     }
 
     private LlmAvailability availability(LlmAvailabilityStatus status, String message) {
@@ -105,7 +108,7 @@ public class OllamaLlmAdapter implements LlmClient {
 
     private static Duration timeout(Duration duration) { return duration == null || duration.isNegative() || duration.isZero() ? Duration.ofSeconds(2) : duration; }
 
-    private record OllamaGenerateRequest(String model, String prompt, String system, boolean stream,
+    private record OllamaGenerateRequest(String model, String prompt, String system, boolean stream, boolean think,
                                          Map<String, Object> options, String format) { }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

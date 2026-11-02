@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import picocli.CommandLine.Command;
 
 @Component
-@Command(name = "status", description = "Check Ollama availability", mixinStandardHelpOptions = true)
+@Command(name = "status", description = "Check configured AI provider availability", mixinStandardHelpOptions = true)
 public class AiStatusCommand implements Runnable {
     private final AiCommand parent;
     public AiStatusCommand(AiCommand parent) { this.parent = parent; }
