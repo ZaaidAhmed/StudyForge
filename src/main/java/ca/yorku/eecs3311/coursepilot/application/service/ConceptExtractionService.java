@@ -52,6 +52,9 @@ public class ConceptExtractionService {
         ConceptExtractionLlmResponse generated;
         try {
             generated = parser.parse(llmClient.generate(promptBuilder.buildConceptExtractionPrompt(document.originalFilename(), context.text())).content(), ConceptExtractionLlmResponse.class);
+            if (generated.concepts().isEmpty()) {
+                generated = parser.parse(llmClient.generate(promptBuilder.buildConceptExtractionRetryPrompt(document.originalFilename(), context.text())).content(), ConceptExtractionLlmResponse.class);
+            }
         } catch (RuntimeException exception) {
             throw new InsightGenerationException("The AI concepts could not be processed safely.", exception);
         }
@@ -64,10 +67,37 @@ public class ConceptExtractionService {
             List<GroundedSource> sources = validateSources(concept.sourceIds(), sourceMap);
             String key = normalizeKey(concept.name());
             MutableConcept existing = merged.get(key);
-            if (existing == null) merged.put(key, new MutableConcept(concept.name().trim(), concept.definition().trim(), sources));
+            if (existing == null) merged.put(key, new MutableConcept(concept.name().trim(), concept.definition().trim(), concept.example(), sources));
             else existing.sources.addAll(sources);
         }
-        return merged.values().stream().map(value -> new ExtractedConcept(value.name, value.definition, List.copyOf(value.sources))).toList();
+        if (merged.isEmpty()) {
+            return fallbackConcepts(context.sources());
+        }
+        return merged.values().stream().map(value -> new ExtractedConcept(value.name, value.definition, value.example, List.copyOf(value.sources))).toList();
+    }
+
+    private List<ExtractedConcept> fallbackConcepts(List<GroundedSource> sources) {
+        List<ExtractedConcept> fallback = new ArrayList<>();
+        for (GroundedSource source : sources) {
+            String snippet = source.snippet() == null ? "" : source.snippet().replaceAll("\\s+", " ").trim();
+            if (snippet.length() < 45) continue;
+            String name = firstMeaningfulPhrase(snippet);
+            String definition = limit(snippet, 320);
+            String example = "In the uploaded material: " + limit(snippet, 220);
+            fallback.add(new ExtractedConcept(name, definition, example, List.of(source)));
+            if (fallback.size() == 5) break;
+        }
+        return fallback;
+    }
+
+    private String firstMeaningfulPhrase(String text) {
+        String phrase = text.split("[.!?:;]", 2)[0].trim();
+        if (phrase.length() < 10) phrase = text;
+        return limit(phrase, 90);
+    }
+
+    private String limit(String value, int max) {
+        return value.length() <= max ? value : value.substring(0, max - 1).trim() + "…";
     }
 
     private List<GroundedSource> validateSources(List<String> ids, Map<String, GroundedSource> sourceMap) {
@@ -90,9 +120,10 @@ public class ConceptExtractionService {
     private static final class MutableConcept {
         private final String name;
         private final String definition;
+        private final String example;
         private final LinkedHashSet<GroundedSource> sources = new LinkedHashSet<>();
-        private MutableConcept(String name, String definition, List<GroundedSource> sources) {
-            this.name = name; this.definition = definition; this.sources.addAll(sources);
+        private MutableConcept(String name, String definition, String example, List<GroundedSource> sources) {
+            this.name = name; this.definition = definition; this.example = example == null ? "" : example.trim(); this.sources.addAll(sources);
         }
     }
 }

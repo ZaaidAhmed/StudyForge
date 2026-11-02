@@ -8,7 +8,9 @@ import java.util.List;
 public record FlashcardGenerationLlmResponse(List<GeneratedFlashcardDto> flashcards) {
     public FlashcardGenerationLlmResponse { flashcards = flashcards == null ? List.of() : flashcards; }
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record GeneratedFlashcardDto(String question, String answer, @JsonAlias("source_ids") List<String> sourceIds) {
+    public record GeneratedFlashcardDto(String question, String answer, String type,
+                                        String concept, @JsonAlias("learning_objective") String learningObjective,
+                                        @JsonAlias("source_ids") List<String> sourceIds) {
         public GeneratedFlashcardDto { sourceIds = sourceIds == null ? List.of() : sourceIds; }
     }
 }
