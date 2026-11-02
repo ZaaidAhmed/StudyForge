@@ -10,6 +10,7 @@
             <p class="lede" th:text="${course.description ?: 'Your course workspace for materials, grounded answers, and focused practice.'}">Course description</p>
         </div>
         <div class="overview-actions">
+            <a class="button ghost" th:href="@{/courses/{id}/edit(id=${course.id})}">Edit course</a>
             <a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Manage materials</a>
             <a class="button primary" th:href="@{/courses/{id}/studio(id=${course.id})}">Open Study Studio</a>
         </div>
@@ -62,7 +63,7 @@
                 <h2 id="course-question-heading">What do you want to understand?</h2>
                 <p class="muted">Answers are based on relevant evidence from this course.</p>
             </div>
-            <a class="text-link" th:href="@{/courses/{id}/ask(id=${course.id})}">Open tutor</a>
+            <a class="text-link" th:href="@{/courses/{id}/studio(id=${course.id})}">Open Study Studio</a>
         </div>
         <form class="overview-question-form" data-progress-operation="question" method="post" th:action="@{/courses/{id}/ask(id=${course.id})}">
             <label class="sr-only" for="overview-question">Ask a question about this course</label>
@@ -81,5 +82,17 @@
             <article class="panel tool-card"><h3>Practice</h3><p>Flashcards and quizzes from ready course material.</p><a class="button secondary" th:href="@{/courses/{id}/practice(id=${course.id})}">Open practice</a></article>
             <article class="panel tool-card"><h3>Insights</h3><p>Summaries, concepts, progress, plans, recommendations, and history.</p><a class="button secondary" th:href="@{/courses/{id}/insights(id=${course.id})}">Open insights</a></article>
         </div>
+    </section>
+
+    <section class="panel danger-zone" aria-labelledby="delete-course-heading">
+        <div>
+            <p class="eyebrow">Course settings</p>
+            <h2 id="delete-course-heading">Delete this course</h2>
+            <p class="muted">Permanently removes this course, its uploaded materials, quizzes, flashcards, study plans, and learning activity.</p>
+        </div>
+        <form method="post" th:action="@{/courses/{id}/delete(id=${course.id})}"
+              onsubmit="return confirm('Delete this course and all of its study data? This cannot be undone.');">
+            <button class="button danger" type="submit">Delete course</button>
+        </form>
     </section>
 </main></body></html>

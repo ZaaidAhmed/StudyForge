@@ -26,6 +26,33 @@ public class CliRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        CommandLine root = buildCommandLine();
+        root.setExecutionExceptionHandler((exception, commandLine, parseResult) -> {
+            Throwable cause = exception;
+            while (cause.getCause() != null) cause = cause.getCause();
+            System.err.println("ERROR: " + (cause.getMessage() == null ? "The command could not be completed." : cause.getMessage()));
+            return 1;
+        });
+        int exitCode;
+        try {
+            exitCode = root.execute(args);
+        } catch (CourseNotFoundException | DuplicateCourseCodeException | DuplicateDocumentException
+                 | DocumentNotFoundException | DocumentImportException | DocumentValidationException
+                 | IllegalArgumentException exception) {
+            System.err.println("ERROR: " + exception.getMessage());
+            exitCode = 1;
+        } catch (Exception exception) {
+            Throwable cause = exception;
+            while (cause.getCause() != null) cause = cause.getCause();
+            System.err.println("ERROR: " + (cause.getMessage() == null ? "The command could not be completed." : cause.getMessage()));
+            exitCode = 1;
+        }
+        final int commandExitCode = exitCode;
+        int springExitCode = org.springframework.boot.SpringApplication.exit(context, () -> commandExitCode);
+        System.exit(springExitCode);
+    }
+
+    CommandLine buildCommandLine() {
         CommandLine root = new CommandLine(command);
         CommandLine course = new CommandLine(command.courseCommand());
         course.addSubcommand("list", new CourseListCommand(command.courseCommand()));
@@ -54,28 +81,18 @@ public class CliRunner implements CommandLineRunner {
         flashcards.addSubcommand("list", new FlashcardsCommand.ListCards(command.flashcardsCommand()));
         flashcards.addSubcommand("review", new FlashcardsCommand.Review(command.flashcardsCommand()));
         root.addSubcommand("flashcards", flashcards);
-        root.setExecutionExceptionHandler((exception, commandLine, parseResult) -> {
-            Throwable cause = exception;
-            while (cause.getCause() != null) cause = cause.getCause();
-            System.err.println("ERROR: " + (cause.getMessage() == null ? "The command could not be completed." : cause.getMessage()));
-            return 1;
-        });
-        int exitCode;
-        try {
-            exitCode = root.execute(args);
-        } catch (CourseNotFoundException | DuplicateCourseCodeException | DuplicateDocumentException
-                 | DocumentNotFoundException | DocumentImportException | DocumentValidationException
-                 | IllegalArgumentException exception) {
-            System.err.println("ERROR: " + exception.getMessage());
-            exitCode = 1;
-        } catch (Exception exception) {
-            Throwable cause = exception;
-            while (cause.getCause() != null) cause = cause.getCause();
-            System.err.println("ERROR: " + (cause.getMessage() == null ? "The command could not be completed." : cause.getMessage()));
-            exitCode = 1;
-        }
-        final int commandExitCode = exitCode;
-        int springExitCode = org.springframework.boot.SpringApplication.exit(context, () -> commandExitCode);
-        System.exit(springExitCode);
+        CommandLine quiz = new CommandLine(command.quizCommand());
+        quiz.addSubcommand("generate", new QuizCommand.Generate(command.quizCommand()));
+        quiz.addSubcommand("list", new QuizCommand.ListQuizzes(command.quizCommand()));
+        root.addSubcommand("quiz", quiz);
+        root.addSubcommand("progress", command.progressCommand());
+        CommandLine studyPlan = new CommandLine(command.studyPlanCommand());
+        studyPlan.addSubcommand("create", new StudyPlanCommand.Create(command.studyPlanCommand()));
+        studyPlan.addSubcommand("list", new StudyPlanCommand.ListPlans(command.studyPlanCommand()));
+        root.addSubcommand("study-plan", studyPlan);
+        root.addSubcommand("recommend", command.recommendationCommand());
+        root.addSubcommand("history", command.historyCommand());
+        root.addSubcommand("agent", command.agentCommand());
+        return root;
     }
 }

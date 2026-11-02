@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Saved quiz attempts')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content learning-content quiz-taking-page">
+    <section class="quiz-taking-shell">
+        <a class="back-link" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Back to quizzes</a>
+        <p class="eyebrow">QUIZ REVIEW</p>
+        <h1>Saved attempts</h1>
+        <p class="lede" th:text="${quiz.title}">Practice quiz</p>
+
+        <section class="card" aria-live="polite">
+            <h2>Review your saved attempts</h2>
+            <p th:if="${#lists.isEmpty(attemptHistory)}">You have not submitted this quiz yet.</p>
+            <div class="list" th:each="saved,stat : ${attemptHistory}">
+                <span>
+                    <strong th:text="${'Attempt ' + (stat.index + 1)}">Attempt 1</strong>
+                    <span th:text="${' — ' + saved.correctCount() + ' / ' + saved.totalCount()}"> — 7 / 10</span>
+                    <small th:if="${saved.completedAt() != null}" th:text="${' · ' + #temporals.format(saved.completedAt(), 'MMM d, yyyy')}"> · Nov 1, 2026</small>
+                </span>
+                <a class="button secondary" th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${quiz.id},attemptId=${saved.id})}">View result</a>
+            </div>
+        </section>
+
+        <div class="quiz-result-actions">
+            <a class="button primary" th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${quiz.id},retake=true)}">Take quiz again</a>
+            <a class="button secondary" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Back to quizzes</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

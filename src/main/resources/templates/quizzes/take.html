@@ -1,3 +1,56 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('Take quiz')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside><main class="content learning-content"><section>
-<a th:href="@{/courses/{id}/quizzes(id=${course.id})}">Back to quizzes</a><p class="eyebrow">PRACTICE QUIZ</p><h1 th:text="${quiz.title}">Quiz</h1><div class="card" th:if="${attempt}"><h2 th:text="${'Score: ' + attempt.correctCount() + ' / ' + attempt.totalCount()}">Score</h2><p>Review the grounded material for any missed answers.</p><div class="answer-result" th:each="answer : ${attempt.answers}"><strong th:text="${answer.correct() ? 'Correct' : 'Needs review'}">Result</strong><p th:text="${answer.feedback()}">Feedback</p><form th:if="${!answer.correct()}" method="post" th:action="@{/courses/{c}/quizzes/{q}/questions/{id}/explain(c=${course.id},q=${quiz.id},id=${answer.questionId})}"><input type="hidden" name="answer" th:value="${answer.answer()}"/><button class="button ghost" type="submit">Explain this answer</button></form></div></div><div class="card alert" th:if="${explanation}" role="status"><h2>Grounded explanation</h2><p th:text="${explanation.explanation()}">Explanation</p><p th:if="${explanation.unavailable}" class="muted">Try again when AI is available.</p><ul><li th:each="source : ${explanation.sources}" th:text="${source.sourceId() + ' · ' + source.documentName() + ' · ' + source.snippet()}">Source</li></ul></div><form class="card quiz-form" method="post" th:action="@{/courses/{c}/quizzes/{q}/submit(c=${course.id},q=${quiz.id})}"><fieldset th:each="question,stat : ${quiz.questions()}"><legend th:text="${(stat.index + 1) + '. ' + question.prompt()}">Question</legend><div th:if="${question.type().name() != 'SHORT_ANSWER'}"><label class="choice" th:each="option : ${question.options()}"><input type="radio" th:name="${'q-' + question.id()}" th:value="${option}"/><span th:text="${option}">Option</span></label></div><textarea th:if="${question.type().name() == 'SHORT_ANSWER'}" th:name="${'q-' + question.id()}" rows="3" placeholder="Write your answer"></textarea></fieldset><button class="button primary" type="submit">Submit answers</button></form>
-</section></main></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Take quiz')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content learning-content quiz-taking-page">
+    <section class="quiz-taking-shell">
+        <a class="back-link" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Back to quizzes</a>
+        <p class="eyebrow">COURSE PRACTICE</p>
+        <h1 th:text="${quiz.title}">Practice quiz</h1>
+        <p class="lede">Answer the questions below, then submit the quiz to see your score and corrections.</p>
+        <div class="alert error" th:if="${quizError}" role="alert" th:text="${quizError}">The quiz could not be processed.</div>
+        <section th:if="${attempt == null and !quiz.questions().isEmpty()}" class="quiz-question-panel">
+            <div class="quiz-form-intro"><strong th:text="${quiz.questions().size() + ' questions'}">10 questions</strong><span>Answers are graded after submission.</span></div>
+            <form method="post" th:action="@{/courses/{c}/quizzes/{q}/submit(c=${course.id},q=${quiz.id})}" class="quiz-form">
+                <fieldset th:each="question,stat : ${quiz.questions()}" class="quiz-question-block">
+                    <legend><span class="quiz-question-number" th:text="${'Question ' + (stat.index + 1)}">Question 1</span><span th:text="${question.prompt()}">Question prompt</span></legend>
+                    <p class="quiz-question-meta"><span class="quiz-type-badge" th:text="${question.type().name().replace('_', ' ')}">MULTIPLE CHOICE</span><span th:text="${question.sources().isEmpty() ? 'Grounded question' : question.sources().get(0).documentName()}">Source document</span></p>
+                    <div th:if="${question.type().name() == 'MULTIPLE_CHOICE'}" class="quiz-choice-list"><label class="choice" th:each="option : ${question.options()}"><input type="radio" th:name="${'q-' + question.id()}" th:value="${option}" th:checked="${submittedAnswers.get(question.id()) == option}"><span th:text="${option}">Option</span></label></div>
+                    <div th:if="${question.type().name() == 'TRUE_FALSE'}" class="quiz-choice-list"><label class="choice"><input type="radio" th:name="${'q-' + question.id()}" value="true" th:checked="${submittedAnswers.get(question.id()) == 'true'}"><span>True</span></label><label class="choice"><input type="radio" th:name="${'q-' + question.id()}" value="false" th:checked="${submittedAnswers.get(question.id()) == 'false'}"><span>False</span></label></div>
+                    <label th:if="${question.type().name() == 'SHORT_ANSWER'}" class="short-answer-label">Your answer<textarea th:name="${'q-' + question.id()}" rows="4" maxlength="3000" placeholder="Write your answer..." th:text="${submittedAnswers.get(question.id())}"></textarea></label>
+                </fieldset>
+                <button class="button primary quiz-submit-button" type="submit">Submit quiz</button>
+            </form>
+        </section>
+        <section th:if="${attempt == null and quiz.questions().isEmpty()}" class="empty-state quiz-results-panel"><h2>This quiz has no questions</h2><p>Return to quizzes and generate a new quiz from ready material.</p><a class="button primary" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Back to quizzes</a></section>
+        <section th:if="${attempt != null}" class="quiz-results-panel" aria-live="polite">
+            <div class="quiz-score-panel"><p class="eyebrow">QUIZ SUBMITTED</p><h2 th:text="${'Score: ' + attempt.correctCount() + ' / ' + attempt.totalCount()}">Score: 2 / 10</h2><p th:text="${attempt.correctCount() + ' correct, ' + (attempt.totalCount() - attempt.correctCount()) + ' needing review.'}">Your results are ready.</p><a class="button secondary" th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${quiz.id},attemptId=${attempt.id})}">Open saved result</a></div>
+            <div class="quiz-answer-review">
+                <article class="quiz-result-row" th:each="row : ${reviewRows}" th:classappend="${row.result().correct() ? ' result-correct' : ' result-needs-review'}">
+                    <div class="quiz-result-heading"><strong th:text="${'Question ' + row.questionNumber()}">Question 1</strong><span th:text="${row.unanswered() ? 'Not answered' : (row.result().correct() ? 'Correct' : 'Needs review')}">Needs review</span></div>
+                    <h3 th:text="${row.question().prompt()}">Question prompt</h3>
+                    <p><strong>Your answer:</strong> <span th:text="${row.unanswered() ? 'Not answered' : row.result().answer()}">Not answered</span></p>
+                    <div class="quiz-correction" th:if="${explainedQuestionId != null and explainedQuestionId == row.question().id()}"><p><strong th:text="${row.question().type().name() == 'SHORT_ANSWER' ? 'Reference answer:' : 'Correct answer:'}">Correct answer:</strong> <span th:text="${row.feedback().correctAnswer()}">Correct answer</span></p><p><strong>Explanation:</strong> <span th:text="${row.feedback().explanation()}">Short explanation</span></p></div>
+                    <form th:if="${!row.result().correct()}" method="post" class="quiz-explanation-form" th:action="@{/courses/{c}/quizzes/{q}/questions/{id}/explain(c=${course.id},q=${quiz.id},id=${row.question().id},attemptId=${attempt.id})}"><button class="button ghost" type="submit">Explain this answer</button></form>
+                </article>
+            </div>
+            <div class="quiz-result-actions"><a class="button primary" th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${quiz.id},retake=true)}">Retake quiz</a><a class="button secondary" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Back to quizzes</a></div>
+        </section>
+        <section class="card quiz-attempt-history" th:if="${attemptHistory != null and !#lists.isEmpty(attemptHistory)}">
+            <h2>Saved attempts</h2>
+            <p>Your completed quiz attempts are stored with this quiz.</p>
+            <div class="list" th:each="saved,stat : ${attemptHistory}">
+                <span>
+                    <strong th:text="${'Attempt ' + (stat.index + 1)}">Attempt 1</strong>
+                    <span th:text="${' — ' + saved.correctCount() + ' / ' + saved.totalCount()}"> — 7 / 10</span>
+                    <small th:if="${saved.completedAt() != null}" th:text="${' · ' + #temporals.format(saved.completedAt(), 'MMM d, yyyy')}"> · Nov 1, 2026</small>
+                </span>
+                <a th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${quiz.id},attemptId=${saved.id})}">View result</a>
+            </div>
+        </section>
+    </section>
+</main>
+</body>
+</html>

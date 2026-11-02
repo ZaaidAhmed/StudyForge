@@ -4,23 +4,38 @@
 <body>
 <header th:replace="~{fragments/layout :: topbar}"></header>
 <aside th:replace="~{fragments/layout :: sidebar}"></aside>
-<main id="main-content" class="content page-shell workspace-hub">
+<main id="main-content" class="content page-shell workspace-hub insights-page">
     <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
-    <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
-    <h1>Insights</h1>
-    <p class="lede">See what you understand, what to study next, and how your course activity is changing.</p>
-    <section class="panel insight-summary" aria-labelledby="summary-heading">
-        <div><p class="eyebrow">Current signal</p><h2 id="summary-heading" th:text="${progress.hasActivity() ? progress.overallScore + '% · ' + progress.overallStatus : 'Not started'}">Not started</h2><p class="muted" th:text="${progress.hasActivity() ? progress.activityCount + ' activities recorded' : 'Review a card or take a quiz to begin.'}">No activity yet</p></div>
-        <div><p class="eyebrow">Next step</p><h2 th:text="${recommendation.label}">Review flashcards</h2><a class="button primary" th:href="${recommendation.href}">Continue</a></div>
+    <header class="insights-header">
+        <div><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Insights</h1><p class="lede">A clear view of your progress, learning signals, and next best step in <span th:text="${course.name}">Software Design</span>.</p></div>
+        <a class="button primary" th:href="${recommendation.href}">Continue studying</a>
+    </header>
+    <section class="insights-signal" aria-labelledby="signal-heading">
+        <div class="signal-copy"><p class="eyebrow">Your current signal</p><h2 id="signal-heading" th:text="${progress.hasActivity() ? progress.overallStatus : 'Ready when you are'}">Ready when you are</h2><p th:text="${progress.hasActivity() ? progress.activityCount + ' learning activities are shaping this view.' : 'Review a card or take a quiz to start building your learning profile.'}">Review a card or take a quiz to start building your learning profile.</p></div>
+        <div class="signal-score" th:attr="aria-label=${progress.hasActivity() ? progress.overallScore + ' percent overall mastery' : 'No mastery score yet'}"><strong th:text="${progress.hasActivity() ? progress.overallScore + '%' : '--'}">--</strong><span>overall mastery</span></div>
     </section>
-    <div class="hub-grid insight-hub-grid">
-        <article class="panel hub-card"><p class="eyebrow">F05–F06</p><h2>Summaries and concepts</h2><p>Turn ready documents into concise summaries and source-linked concepts.</p><div class="hub-actions"><a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Choose a document</a><a class="text-link" th:href="@{/courses/{id}/concepts(id=${course.id})}">Browse concepts</a></div></article>
-        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/progress(id=${course.id})}"><p class="eyebrow">F11</p><h2>Progress</h2><p>Review mastery signals and weak topics.</p></a>
-        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/study-plan(id=${course.id})}"><p class="eyebrow">F12</p><h2>Study plan</h2><p th:text="${planCount + ' saved plan(s)'}">0 saved plans</p></a>
-        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/recommendation(id=${course.id})}"><p class="eyebrow">F13</p><h2>Next step</h2><p>See the transparent recommendation for this course.</p></a>
-        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/agent(id=${course.id})}"><p class="eyebrow">F13</p><h2>Study assistant</h2><p>Ask for a bounded, course-scoped study task.</p></a>
-        <a class="panel hub-card hub-link-card" th:href="@{/courses/{id}/history(id=${course.id})}"><p class="eyebrow">F14</p><h2>Learning history</h2><p th:text="${historyCount + ' recorded event(s)'}">0 recorded events</p></a>
-    </div>
+    <section class="insights-kpis" aria-label="Course learning summary">
+        <a class="insights-kpi" th:href="@{/courses/{id}/progress(id=${course.id})}"><span class="kpi-label">Mastery</span><strong th:text="${progress.hasActivity() ? progress.overallScore + '%' : 'Not started'}">Not started</strong><span class="kpi-detail" th:text="${progress.hasActivity() ? progress.overallStatus : 'Start a learning activity'}">Start a learning activity</span></a>
+        <a class="insights-kpi" th:href="@{/courses/{id}/flashcards(id=${course.id})}"><span class="kpi-label">Flashcards</span><strong th:text="${flashcardCount}">0</strong><span class="kpi-detail">saved cards</span></a>
+        <a class="insights-kpi" th:href="@{/courses/{id}/quizzes(id=${course.id})}"><span class="kpi-label">Quizzes</span><strong th:text="${quizCount}">0</strong><span class="kpi-detail">saved quizzes</span></a>
+        <a class="insights-kpi" th:href="@{/courses/{id}/materials(id=${course.id})}"><span class="kpi-label">Ready materials</span><strong th:text="${readyMaterialCount}">0</strong><span class="kpi-detail" th:text="${materials.size() + ' uploaded total'}">0 uploaded total</span></a>
+    </section>
+    <section class="next-step-panel" aria-labelledby="next-step-heading">
+        <div class="next-step-icon" aria-hidden="true">Next</div><div class="next-step-copy"><p class="eyebrow">Recommended next step</p><h2 id="next-step-heading" th:text="${recommendation.label}">Review flashcards</h2><p th:text="${recommendation.reason}">Use your recent activity to choose the most useful study action.</p></div><a class="button secondary" th:href="${recommendation.href}">Open recommendation</a>
+    </section>
+    <div class="insights-section-heading"><div><p class="eyebrow">Understand your learning</p><h2>Progress and signals</h2></div><a class="text-link" th:href="@{/courses/{id}/progress(id=${course.id})}">View detailed progress</a></div>
+    <section class="insights-analysis-grid">
+        <article class="insights-card insights-topic-card"><div class="card-heading-row"><div><p class="eyebrow">Topic signals</p><h3>What needs attention?</h3></div><span class="count-badge" th:text="${topicCount}">0</span></div><div th:if="${progress.hasActivity() and !progress.topics.isEmpty()}" class="topic-signal-list"><div class="topic-signal" th:each="topic : ${progress.topics}"><div class="topic-signal-heading"><strong th:text="${topic.topic}">Course material</strong><span th:text="${topic.score + '%'}">80%</span></div><div class="topic-bar" role="progressbar" th:attr="aria-valuenow=${topic.score},aria-valuemin=0,aria-valuemax=100,aria-label=${topic.topic + ' mastery'}"><span th:style="'width:' + ${topic.score} + '%'"></span></div><span class="topic-signal-meta" th:text="${topic.status + ' · ' + topic.activities + ' activities'}">DEVELOPING · 2 activities</span></div></div><div th:unless="${progress.hasActivity() and !progress.topics.isEmpty()}" class="insights-empty"><strong>No signals yet</strong><span>Complete a review or quiz to see topic-level guidance.</span></div><a class="text-link card-footer-link" th:href="@{/courses/{id}/progress(id=${course.id})}">Explore progress</a></article>
+        <article class="insights-card materials-signal-card"><div class="card-heading-row"><div><p class="eyebrow">Study foundation</p><h3>Ready course material</h3></div><span class="count-badge teal" th:text="${readyMaterialCount + ' ready'}">0 ready</span></div><p class="card-description">Insights stay grounded in material that has finished processing.</p><div class="readiness-row"><span>Ready to study</span><strong th:text="${readyMaterialCount + ' of ' + materials.size()}">0 of 0</strong></div><div class="topic-bar readiness-bar" role="progressbar" th:attr="aria-valuenow=${materials.isEmpty() ? 0 : (readyMaterialCount * 100 / materials.size())},aria-valuemin=0,aria-valuemax=100,aria-label='Ready material percentage'"><span th:style="'width:' + ${materials.isEmpty() ? 0 : (readyMaterialCount * 100 / materials.size())} + '%'" ></span></div><p class="muted" th:if="${materials.isEmpty()}">Upload a PDF, TXT, or Markdown file to begin.</p><p class="muted" th:unless="${materials.isEmpty()}">Choose a ready document to generate grounded study content.</p><a class="button secondary card-footer-button" th:href="@{/courses/{id}/materials(id=${course.id})}" th:text="${materials.isEmpty() ? 'Add material' : 'Open materials'}">Open materials</a></article>
+    </section>
+    <div class="insights-section-heading"><div><p class="eyebrow">Keep moving</p><h2>Course tools</h2></div><span class="muted">Choose what you need today</span></div>
+    <section class="insights-tools-grid" aria-label="Course insight tools">
+        <a class="insights-tool" th:href="@{/courses/{id}/materials(id=${course.id})}"><span class="tool-icon" aria-hidden="true">01</span><span><strong>Summaries and concepts</strong><small>Turn ready documents into focused study notes.</small></span><span class="tool-arrow" aria-hidden="true">→</span></a>
+        <a class="insights-tool" th:href="@{/courses/{id}/study-plan(id=${course.id})}"><span class="tool-icon" aria-hidden="true">02</span><span><strong>Study plan</strong><small th:text="${planCount + ' saved plan(s)'}">0 saved plans</small></span><span class="tool-arrow" aria-hidden="true">→</span></a>
+        <a class="insights-tool" th:href="@{/courses/{id}/recommendation(id=${course.id})}"><span class="tool-icon" aria-hidden="true">03</span><span><strong>Recommendation</strong><small>See why this next step was chosen.</small></span><span class="tool-arrow" aria-hidden="true">→</span></a>
+        <a class="insights-tool" th:href="@{/courses/{id}/agent(id=${course.id})}"><span class="tool-icon" aria-hidden="true">04</span><span><strong>Study assistant</strong><small>Ask for a bounded, course-scoped task.</small></span><span class="tool-arrow" aria-hidden="true">→</span></a>
+        <a class="insights-tool" th:href="@{/courses/{id}/history(id=${course.id})}"><span class="tool-icon" aria-hidden="true">05</span><span><strong>Learning history</strong><small th:text="${historyCount + ' recorded event(s)'}">0 recorded events</small></span><span class="tool-arrow" aria-hidden="true">→</span></a>
+    </section>
 </main>
 </body>
 </html>

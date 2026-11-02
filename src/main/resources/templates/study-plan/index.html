@@ -1,1 +1,51 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('Study Plan')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside><main class="content learning-content"><a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Study Plan</h1><p class="lede">Build a practical schedule from your learning activity. Scheduling constraints are enforced deterministically.</p><div class="card"><h2>Create a plan</h2><form method="post" th:action="@{/courses/{id}/study-plan(id=${course.id})}"><label>Start date<input type="date" name="startDate" required></label><label>Target date<input type="date" name="targetDate" required></label><label>Available minutes total<input type="number" name="minutes" min="1" required value="120"></label><label>Strategy<select name="strategy"><option value="BALANCED">Balanced</option><option value="WEAK_TOPIC_FOCUSED">Weak-topic focused</option><option value="EXAM_CRAM">Exam cram</option></select></label><button class="button primary" type="submit">Create study plan</button></form><p class="alert success" th:if="${planMessage}" th:text="${planMessage}"></p><p class="alert error" th:if="${planError}" th:text="${planError}"></p></div><section class="card"><h2>Saved plans</h2><p th:if="${#lists.isEmpty(plans)}">No study plan yet. Create one after reviewing flashcards or taking a quiz.</p><article class="list" th:each="plan : ${plans}"><div><strong th:text="${plan.strategy}">BALANCED</strong><p class="muted" th:text="${plan.startDate + ' to ' + plan.targetDate + ' · ' + plan.availableMinutes + ' minutes'}">Dates</p></div><ul><li th:each="item : ${plan.items}" th:text="${item.date + ' · ' + item.activity + ' (' + item.minutes + ' min)'}">Activity</li></ul></article></section></main></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Study Plan')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main id="main-content" class="content learning-content study-plan-page">
+    <a class="back-link" th:href="@{/courses/{id}/insights(id=${course.id})}">Back to insights</a>
+    <header class="study-plan-header">
+        <div><p class="eyebrow" th:text="${course.courseCode}">EECS3221</p><h1>Study Plan</h1><p class="lede">Create an optimized learning schedule powered by your course activity.</p></div>
+        <a class="button secondary" th:href="@{/courses/{id}/progress(id=${course.id})}">View progress</a>
+    </header>
+
+    <section class="study-plan-stats" aria-label="Study plan overview">
+        <div><span>Saved plans</span><strong th:text="${planCount}">0</strong><small>course schedules</small></div>
+        <div><span>Scheduled study</span><strong th:text="${scheduledMinutes + ' min'}">0 min</strong><small>across saved plans</small></div>
+        <div><span>Course focus</span><strong th:text="${course.name}">Operating Systems</strong><small>your selected course</small></div>
+    </section>
+
+    <p class="alert success study-plan-alert" th:if="${planMessage}" th:text="${planMessage}" role="status"></p>
+    <p class="alert error study-plan-alert" th:if="${planError}" th:text="${planError}" role="alert"></p>
+
+    <div class="study-plan-layout">
+        <section class="study-plan-create card" aria-labelledby="create-plan-heading">
+            <div class="section-intro"><div class="section-icon" aria-hidden="true">01</div><div><p class="eyebrow">Build your schedule</p><h2 id="create-plan-heading">Generate AI Study Plan</h2><p>Choose a date range, available study time, and strategy. The schedule remains deterministic and course-scoped.</p></div></div>
+            <form data-progress-operation="studyPlan" method="post" th:action="@{/courses/{id}/study-plan(id=${course.id})}">
+                <div class="date-fields"><label>Start date<input type="date" name="startDate" required th:value="${startDate}"></label><label>Target date<input type="date" name="targetDate" required th:value="${targetDate}"></label></div>
+                <label class="minutes-field">Available minutes total<input type="number" name="minutes" min="1" max="100000" required th:value="${minutes ?: 120}"><span>Set the total time you can commit during this plan.</span></label>
+                <fieldset class="strategy-fieldset"><legend>Choose a strategy</legend><div class="strategy-options"><label class="strategy-option"><input type="radio" name="strategy" value="BALANCED" th:checked="${strategy == null || strategy == 'BALANCED'}"><span><strong>Balanced</strong><small>A steady mix of review and new material.</small></span></label><label class="strategy-option"><input type="radio" name="strategy" value="WEAK_TOPIC_FOCUSED" th:checked="${strategy == 'WEAK_TOPIC_FOCUSED'}"><span><strong>Weak-topic focused</strong><small>Prioritize areas that need more practice.</small></span></label><label class="strategy-option"><input type="radio" name="strategy" value="EXAM_CRAM" th:checked="${strategy == 'EXAM_CRAM'}"><span><strong>Exam focused</strong><small>Concentrate effort toward the target date.</small></span></label></div></fieldset>
+                <button class="button primary generate-plan-button" type="submit">Generate AI Study Plan</button>
+            </form>
+        </section>
+
+        <aside class="study-plan-aside" aria-label="Study plan details">
+            <section class="plan-preview-card card">
+                <div class="card-heading-row"><div><p class="eyebrow">Schedule preview</p><h2>Plan at a glance</h2></div><span class="preview-badge" th:text="${latestPlan == null ? 'Draft' : 'Saved'}">Draft</span></div>
+                <div th:if="${latestPlan != null}" class="preview-content"><div class="preview-row"><span>Study window</span><strong th:text="${latestPlan.startDate + ' to ' + latestPlan.targetDate}">Dates</strong></div><div class="preview-row"><span>Strategy</span><strong th:text="${latestPlan.strategy}">BALANCED</strong></div><div class="preview-row"><span>Planned sessions</span><strong th:text="${latestPlan.items.size()}">0</strong></div><div class="preview-progress" aria-hidden="true"><span style="width: 68%"></span></div><small>Generate a new plan to update this preview.</small></div>
+                <div th:unless="${latestPlan != null}" class="preview-empty"><strong>Your schedule will appear here</strong><span>Set your dates and study time to create a focused plan.</span></div>
+            </section>
+            <section class="plan-guidance card"><p class="eyebrow">Planning note</p><h2>Make your next session count</h2><p>Start with a realistic time budget. You can generate another plan whenever your schedule changes.</p><a class="text-link" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Review learning activity</a></section>
+        </aside>
+    </div>
+
+    <section class="saved-plans-section" aria-labelledby="saved-plans-heading">
+        <div class="saved-plans-heading"><div><p class="eyebrow">Your schedules</p><h2 id="saved-plans-heading">Saved plans</h2></div><span class="muted" th:text="${planCount == 0 ? 'Create your first schedule' : planCount + ' saved plan(s)'}">Create your first schedule</span></div>
+        <div th:if="${#lists.isEmpty(plans)}" class="saved-plans-empty"><div class="progress-empty-icon" aria-hidden="true">+</div><h3>No study plans yet</h3><p>Generate your first AI-powered study schedule and track progress toward course mastery.</p><a class="button secondary" href="#create-plan-heading">Create my first plan</a></div>
+        <div th:unless="${#lists.isEmpty(plans)}" class="saved-plan-list"><article class="saved-plan-card" th:each="plan : ${plans}"><div class="saved-plan-top"><div><span class="plan-strategy" th:text="${plan.strategy}">BALANCED</span><h3 th:text="${plan.startDate + ' to ' + plan.targetDate}">2026-11-01 to 2026-11-14</h3></div><strong th:text="${plan.availableMinutes + ' min'}">120 min</strong></div><div class="saved-plan-meta"><span th:text="${plan.items.size() + ' scheduled session(s)'}">4 scheduled sessions</span><span>Course-scoped plan</span></div><div class="saved-plan-track"><span style="width: 68%"></span></div><ul><li th:each="item : ${plan.items}" th:text="${item.date + ' · ' + item.activity + ' (' + item.minutes + ' min)'}">Activity</li></ul></article></div>
+    </section>
+</main>
+</body>
+</html>

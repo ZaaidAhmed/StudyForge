@@ -1,5 +1,118 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('Quizzes')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside><main class="content learning-content"><section>
-<a th:href="@{/courses/{id}(id=${course.id})}">Back to course</a><p class="eyebrow">COURSE WORKSPACE</p><h1>Quizzes</h1><p class="lede">Generate a grounded practice quiz from ready material in <strong th:text="${course.name}">this course</strong>.</p>
-<div class="card action-card"><h2>Generate a quiz</h2><p>Questions are created only from the selected uploaded document.</p><form method="post" th:action="@{/courses/{id}/quizzes/generate(id=${course.id})}"><label>Material<select name="documentId" required><option th:each="m : ${materials}" th:if="${m.processingStatus() == 'READY'}" th:value="${m.id()}" th:text="${m.originalFilename()}">document</option></select></label><label>Questions<select name="count"><option>5</option><option selected="selected">10</option><option>15</option></select></label><button class="button primary" type="submit">Generate quiz</button></form><p class="error" th:if="${quizError}" th:text="${quizError}"></p></div>
-<div class="card"><h2>Saved quizzes</h2><p th:if="${#lists.isEmpty(quizzes)}">No quizzes yet. Upload a ready document, then generate one above.</p><div class="list" th:each="quiz : ${quizzes}"><a th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${quiz.id})}" th:text="${quiz.title}">Quiz</a><span th:text="${#lists.size(quiz.questions()) + ' questions'}">0 questions</span></div></div>
-</section></main></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quizzes')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content learning-content">
+    <section>
+        <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
+        <p class="eyebrow">COURSE WORKSPACE</p>
+        <h1>Quizzes</h1>
+        <p class="lede">Generate a grounded practice quiz from ready material in
+            <strong th:text="${course.name}">this course</strong>.</p>
+
+        <div class="card action-card">
+            <h2>Generate a quiz</h2>
+            <p>Questions are created only from the selected uploaded document. Choose the question formats you want to practice.</p>
+            <form id="quiz-generation-form" data-progress-operation="quiz" method="post"
+                  th:action="@{/courses/{id}/quizzes/generate(id=${course.id})}">
+                <label for="quiz-document">Ready material</label>
+                <select id="quiz-document" name="documentId" required>
+                    <option value="">Choose a ready document</option>
+                    <option th:each="m : ${materials}" th:if="${m.processingStatus() == 'READY'}"
+                            th:value="${m.id()}" th:text="${m.originalFilename()}"
+                            th:selected="${selectedDocumentId == m.id()}">document</option>
+                </select>
+                <label for="quiz-count">Questions</label>
+                <select id="quiz-count" name="count">
+                    <option value="5" th:selected="${requestedCount == '5'}">5</option>
+                    <option value="10" th:selected="${requestedCount == null or requestedCount == '10'}">10</option>
+                    <option value="15" th:selected="${requestedCount == '15'}">15</option>
+                    <option value="20" th:selected="${requestedCount == '20'}">20</option>
+                    <option th:if="${requestedCount != null and requestedCount != '5' and requestedCount != '10' and requestedCount != '15' and requestedCount != '20'}"
+                            th:value="${requestedCount}" th:text="${requestedCount}" selected="selected">submitted count</option>
+                </select>
+                <fieldset class="quiz-type-options">
+                    <legend>Question types</legend>
+                    <label><input type="checkbox" name="questionTypes" value="MULTIPLE_CHOICE" checked> Multiple choice</label>
+                    <label><input type="checkbox" name="questionTypes" value="TRUE_FALSE" checked> True/false</label>
+                    <label><input type="checkbox" name="questionTypes" value="SHORT_ANSWER"> Short answer</label>
+                    <small>Short answers use hybrid AI and deterministic grading.</small>
+                </fieldset>
+                <button id="generate-quiz" class="button primary" type="submit">Generate quiz</button>
+            </form>
+            <div id="quiz-generation-progress" class="generation-progress" hidden role="status" aria-live="polite">
+                <div class="generation-progress-heading">
+                    <strong id="quiz-progress-stage">Starting quiz generation</strong>
+                    <span id="quiz-progress-percent">0% complete</span>
+                </div>
+                <progress id="quiz-progress-bar" max="100" value="0" aria-label="Quiz generation progress"></progress>
+            </div>
+            <p class="error" role="alert" th:if="${quizError}" th:text="${quizError}"></p>
+            <div class="alert success" role="status" th:if="${generation}">
+                <p th:text="${generation.createdCount() + ' questions generated and saved. (' + generation.createdCount() + ' of ' + generation.requestedCount() + ' requested.)'}">Quiz generated and saved.</p>
+                <a th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${generation.quiz().id()})}">Start quiz</a>
+            </div>
+            <div class="empty-state" th:if="${#lists.isEmpty(materials)}">
+                <h3>Upload material first</h3>
+                <p>Only ready material can produce grounded quiz questions.</p>
+                <a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">Upload material</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Saved quizzes</h2>
+            <div class="alert success" role="status" th:if="${successMessage}" th:text="${successMessage}"></div>
+            <p th:if="${#lists.isEmpty(quizzes)}">No quizzes yet. Upload a ready document, then generate one above.</p>
+            <div class="list" th:each="quiz : ${quizzes}">
+                <a th:href="@{/courses/{c}/quizzes/{q}(c=${course.id},q=${quiz.id})}"
+                   th:text="${quiz.title}">Quiz</a>
+                <span>
+                    <span th:text="${#lists.size(quiz.questions()) + ' questions'}">0 questions</span>
+                    <small th:if="${attemptCounts[quiz.id] > 0}"
+                           th:text="${' · ' + attemptCounts[quiz.id] + (attemptCounts[quiz.id] == 1 ? ' attempt' : ' attempts')}"> · 1 attempt</small>
+                </span>
+                <a class="button secondary quiz-attempts-link" th:if="${attemptCounts[quiz.id] > 0}"
+                   th:href="@{/courses/{c}/quizzes/{q}/attempts(c=${course.id},q=${quiz.id})}">Review saved attempts</a>
+                <form method="post" th:action="@{/courses/{c}/quizzes/{q}/delete(c=${course.id},q=${quiz.id})}"
+                      onsubmit="return confirm('Delete this saved quiz? Its questions and attempts will be permanently removed.');">
+                    <button class="button danger quiz-delete-button" type="submit">Delete</button>
+                </form>
+            </div>
+        </div>
+    </section>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = null;
+    if (form) {
+        form.addEventListener('submit', function () {
+            const b = document.getElementById('generate-quiz');
+            const panel = document.getElementById('quiz-generation-progress');
+            const bar = document.getElementById('quiz-progress-bar');
+            const percent = document.getElementById('quiz-progress-percent');
+            const stage = document.getElementById('quiz-progress-stage');
+            b.disabled=true;
+            b.textContent = 'Generating quiz…';
+            panel.hidden = false;
+            const stages = [];
+            stages.push({value:10, title:'Preparing quiz generation'});
+            stages.push({value:30, title:'Retrieving document evidence'});
+            stages.push({value:72, title:'Generating grounded questions'});
+            stages.push({value:88, title:'Validating and saving quiz'});
+            let i = 0;
+            const update = function () {
+                const item = stages[i];
+                bar.value = item.value;
+                percent.textContent = item.value + '% complete';
+                stage.textContent = item.title;
+                if (i < stages.length - 1) { i++; window.setTimeout(update, 2200); }
+            };
+            update();
+        });
+    }
+});
+</script>
+</body>
+</html>

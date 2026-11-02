@@ -51,10 +51,14 @@ public class CourseWorkspaceController {
     @GetMapping("/insights")
     public String insights(@PathVariable Long courseId, Model model) {
         populateCommon(courseId, model);
-        model.addAttribute("progress", progressService.summarize(courseId));
+        var progress = progressService.summarize(courseId);
+        model.addAttribute("progress", progress);
         model.addAttribute("recommendation", recommendationService.recommend(courseId));
         model.addAttribute("planCount", studyPlanService.list(courseId).size());
         model.addAttribute("historyCount", historyService.list(courseId).size());
+        model.addAttribute("flashcardCount", facade.listFlashcards(courseId).size());
+        model.addAttribute("quizCount", facade.listQuizzes(courseId).size());
+        model.addAttribute("topicCount", progress.topics().size());
         model.addAttribute("activeNav", "insights");
         return "workspace/insights";
     }

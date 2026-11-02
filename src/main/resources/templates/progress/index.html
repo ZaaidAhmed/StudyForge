@@ -1,1 +1,34 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('Progress')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside><main class="content learning-content"><a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Progress</h1><p class="lede">Deterministic mastery estimates from your persisted flashcard reviews and quiz attempts.</p><div class="card" th:if="${!progress.hasActivity()}"><h2>No progress data yet</h2><p>Review flashcards or take a quiz to start building your learning profile.</p><div class="state-actions"><a class="button secondary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Review flashcards</a><a class="button ghost" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Take a quiz</a></div></div><div th:if="${progress.hasActivity()}"><div class="card"><p class="eyebrow">OVERALL MASTERY</p><h2 th:text="${progress.overallScore + '% · ' + progress.overallStatus}">72% · DEVELOPING</h2><p th:text="${progress.activityCount + ' learning activities recorded'}">3 learning activities recorded</p></div><section class="card"><h2>Topic signals</h2><div class="list" th:each="topic : ${progress.topics}"><div><strong th:text="${topic.topic}">Material</strong><p class="muted" th:text="${topic.activities + ' activities'}">2 activities</p></div><strong th:text="${topic.score + '% · ' + topic.status}">80% · STRONG</strong></div></section></div></main></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Progress')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main id="main-content" class="content learning-content progress-page">
+    <a class="back-link" th:href="@{/courses/{id}/insights(id=${course.id})}">Back to insights</a>
+    <header class="progress-header">
+        <div><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Progress</h1><p class="lede">A simple view of your mastery across flashcard reviews and quiz attempts.</p></div>
+        <div class="progress-header-actions"><a class="button secondary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Review flashcards</a><a class="button ghost" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Take a quiz</a></div>
+    </header>
+
+    <section class="progress-empty card" th:if="${!progress.hasActivity()}" aria-labelledby="empty-progress-heading">
+        <div class="progress-empty-icon" aria-hidden="true">+</div><h2 id="empty-progress-heading">No progress data yet</h2><p>Complete a flashcard review or quiz to start building your learning profile.</p><div class="state-actions"><a class="button secondary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Review flashcards</a><a class="button ghost" th:href="@{/courses/{id}/quizzes(id=${course.id})}">Take a quiz</a></div>
+    </section>
+
+    <div th:if="${progress.hasActivity()}">
+        <section class="progress-overview" aria-labelledby="mastery-heading">
+            <div class="progress-overview-copy"><p class="eyebrow">Overall mastery</p><h2 id="mastery-heading" th:text="${progress.overallStatus}">DEVELOPING</h2><p th:text="${progress.activityCount + ' learning activities recorded'}">11 learning activities recorded</p></div>
+            <div class="mastery-meter"><div class="mastery-ring" th:style="'--mastery:' + ${progress.overallScore * 3.6} + 'deg'" role="img" th:attr="aria-label=${progress.overallScore + ' percent overall mastery'}"><span th:text="${progress.overallScore + '%'}">46%</span></div><div><strong>Course mastery</strong><span>Based on your saved activity</span></div></div>
+        </section>
+        <section class="progress-topics card" aria-labelledby="topics-heading">
+            <div class="progress-section-heading"><div><p class="eyebrow">Learning signals</p><h2 id="topics-heading">Topic performance</h2></div><span class="muted" th:text="${progress.topics.size() + ' areas tracked'}">2 areas tracked</span></div>
+            <div class="progress-topic-row" th:each="topic : ${progress.topics}">
+                <div class="progress-topic-top"><div><strong th:text="${topic.topic}">Course material</strong><span th:text="${topic.activities + ' activities'}">10 activities</span></div><div class="progress-topic-score"><strong th:text="${topic.score + '%'}">72%</strong><span th:text="${topic.status}">DEVELOPING</span></div></div>
+                <div class="progress-track" role="progressbar" th:attr="aria-valuenow=${topic.score},aria-valuemin=0,aria-valuemax=100,aria-label=${topic.topic + ' mastery'}"><span th:style="'width:' + ${topic.score} + '%'" ></span></div>
+            </div>
+        </section>
+        <section class="progress-guidance" aria-label="Progress guidance"><div><p class="eyebrow">What next?</p><h2>Turn a weak signal into your next review</h2><p>Focus on the topic with the lowest score, then return here to measure the change.</p></div><a class="button primary" th:href="@{/courses/{id}/insights(id=${course.id})}">View insights</a></section>
+    </div>
+</main>
+</body>
+</html>
