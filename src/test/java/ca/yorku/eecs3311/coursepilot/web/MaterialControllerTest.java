@@ -56,7 +56,31 @@ class MaterialControllerTest {
 
         mockMvc.perform(get("/courses/1/materials/search").param("q", "strategy pattern").param("limit", "5"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("materials/list"));
+                .andExpect(view().name("materials/list"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("Search course materials")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("Lecture 6.pdf")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("Open document")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Upload and process"))))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Uploaded materials"))));
+    }
+
+    @Test
+    void normalMaterialsPageKeepsUploadAndLibrarySections() throws Exception {
+        when(facade.getCourse(1L)).thenReturn(new CourseResponse(1L, "EECS3311", "Software Design", null, null, null, null));
+        when(facade.listMaterials(1L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/courses/1/materials"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("materials/list"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("Upload and process")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("Uploaded materials")));
     }
 
     @Test

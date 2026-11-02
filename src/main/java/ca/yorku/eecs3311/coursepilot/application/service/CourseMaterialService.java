@@ -7,6 +7,10 @@ import ca.yorku.eecs3311.coursepilot.domain.model.DocumentChunk;
 import ca.yorku.eecs3311.coursepilot.domain.repository.CourseDocumentRepository;
 import ca.yorku.eecs3311.coursepilot.domain.repository.CourseRepository;
 import ca.yorku.eecs3311.coursepilot.domain.repository.DocumentChunkRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardReviewRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.QuizAttemptRepository;
+import ca.yorku.eecs3311.coursepilot.domain.repository.QuizRepository;
 import ca.yorku.eecs3311.coursepilot.infrastructure.document.ChunkDraft;
 import ca.yorku.eecs3311.coursepilot.infrastructure.document.DocumentExtractorFactory;
 import ca.yorku.eecs3311.coursepilot.infrastructure.document.DocumentImportException;
@@ -41,7 +45,9 @@ public class CourseMaterialService {
                                  DocumentChunkRepository chunkRepository, DocumentValidator validator,
                                  HashService hashService, FileStorageService storage,
                                  DocumentExtractorFactory extractorFactory, TextNormalizer normalizer,
-                                 TextChunker chunker) {
+                                 TextChunker chunker, FlashcardRepository flashcardRepository,
+                                 FlashcardReviewRepository reviewRepository, QuizAttemptRepository quizAttemptRepository,
+                                 QuizRepository quizRepository) {
         this.courseRepository = courseRepository;
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
@@ -51,7 +57,16 @@ public class CourseMaterialService {
         this.extractorFactory = extractorFactory;
         this.normalizer = normalizer;
         this.chunker = chunker;
+        this.flashcardRepository = flashcardRepository;
+        this.reviewRepository = reviewRepository;
+        this.quizAttemptRepository = quizAttemptRepository;
+        this.quizRepository = quizRepository;
     }
+
+    private final FlashcardRepository flashcardRepository;
+    private final FlashcardReviewRepository reviewRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final QuizRepository quizRepository;
 
     public ImportResult importMaterial(Long courseId, String filename, String contentType, byte[] content) {
         var course = courseRepository.findById(courseId)
@@ -112,5 +127,36 @@ public class CourseMaterialService {
                 .filter(value -> value.getCourse().getId().equals(courseId))
                 .orElseThrow(() -> new DocumentNotFoundException("Material with id '" + documentId + "' was not found for this course."));
         return new FileSystemResource(storage.load(document.getStoredFilename()));
+    }
+
+    public void deleteMaterial(Long courseId, Long documentId) {
+        if (!courseRepository.existsById(courseId)) {
+            throw new CourseNotFoundException("Course with id '" + courseId + "' was not found.");
+        }
+        CourseDocument document = documentRepository.findById(documentId)
+                .filter(value -> value.getCourse().getId().equals(courseId))
+                .orElseThrow(() -> new DocumentNotFoundException("Material with id '" + documentId + "' was not found for this course."));
+
+        var flashcards = flashcardRepository.findByCourseIdWithSources(courseId).stream()
+                .filter(card -> card.getSources().stream().anyMatch(source -> source.getDocument().getId().equals(documentId)))
+                .toList();
+        var flashcardIds = flashcards.stream().map(card -> card.getId()).collect(java.util.stream.Collectors.toSet());
+        reviewRepository.deleteAll(reviewRepository.findByCourseIdOrderByIdAsc(courseId).stream()
+                .filter(review -> flashcardIds.contains(review.getFlashcard().getId())).toList());
+        flashcardRepository.deleteAll(flashcards);
+
+        var quizzes = quizRepository.findByCourseId(courseId).stream()
+                .filter(quiz -> quiz.getQuestions().stream()
+                        .anyMatch(question -> question.getSources().stream()
+                                .anyMatch(source -> source.getDocument().getId().equals(documentId))))
+                .toList();
+        var quizIds = quizzes.stream().map(quiz -> quiz.getId()).collect(java.util.stream.Collectors.toSet());
+        quizAttemptRepository.deleteAll(quizAttemptRepository.findByCourseId(courseId).stream()
+                .filter(attempt -> quizIds.contains(attempt.getQuiz().getId())).toList());
+        quizRepository.deleteAll(quizzes);
+
+        chunkRepository.deleteAll(chunkRepository.findByDocumentIdOrderByChunkIndexAsc(documentId));
+        documentRepository.delete(document);
+        storage.deleteStored(document.getStoredFilename());
     }
 }

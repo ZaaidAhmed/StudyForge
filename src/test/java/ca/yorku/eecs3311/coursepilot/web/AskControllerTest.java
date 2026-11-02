@@ -7,6 +7,7 @@ import ca.yorku.eecs3311.coursepilot.application.dto.CourseResponse;
 import ca.yorku.eecs3311.coursepilot.application.dto.GroundedAnswer;
 import ca.yorku.eecs3311.coursepilot.application.dto.GroundedSource;
 import ca.yorku.eecs3311.coursepilot.application.service.GroundedQuestionException;
+import ca.yorku.eecs3311.coursepilot.config.AiProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AskControllerTest {
     @Autowired MockMvc mockMvc;
     @MockBean StudyAgentFacade facade;
+    @MockBean AiProperties aiProperties;
 
     @Test
     void askFormKeepsCourseContext() throws Exception {
@@ -62,10 +66,29 @@ class AskControllerTest {
     @Test
     void aiStatusPageRendersAvailability() throws Exception {
         when(facade.aiStatus()).thenReturn(new LlmAvailability(LlmAvailabilityStatus.AVAILABLE, "ollama", "test-model", "reachable"));
+        when(aiProperties.getProvider()).thenReturn("ollama");
         mockMvc.perform(get("/ai/status"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("ai/status"))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("test-model")));
+    }
+
+    @Test
+    void modelSwitchUpdatesTheRunningConfiguration() throws Exception {
+        when(aiProperties.getProvider()).thenReturn("gemini");
+        mockMvc.perform(post("/ai/status/model").param("model", "gemini-3.5-flash-lite"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/ai/status"));
+        verify(aiProperties).setModel("gemini-3.5-flash-lite");
+    }
+
+    @Test
+    void unsupportedModelIsRejected() throws Exception {
+        when(aiProperties.getProvider()).thenReturn("gemini");
+        mockMvc.perform(post("/ai/status/model").param("model", "unknown-model"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/ai/status"));
+        verify(aiProperties, never()).setModel(anyString());
     }
 
     private CourseResponse course() {

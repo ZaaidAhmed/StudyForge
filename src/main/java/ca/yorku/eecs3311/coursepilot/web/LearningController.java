@@ -27,13 +27,25 @@ public class LearningController {
     @GetMapping("/materials/{documentId}/summary")
     public String summaryPage(@PathVariable Long courseId, @PathVariable Long documentId, Model model) {
         populateDocument(courseId, documentId, model);
+        model.addAttribute("topic", "");
         return "learning/summary";
     }
 
     @PostMapping("/materials/{documentId}/summary")
-    public String summarize(@PathVariable Long courseId, @PathVariable Long documentId, Model model) {
+    public String summarize(@PathVariable Long courseId, @PathVariable Long documentId,
+                            @RequestParam(defaultValue = "") String topic, Model model) {
         populateDocument(courseId, documentId, model);
-        try { model.addAttribute("summary", facade.summarizeDocument(courseId, documentId)); }
+        model.addAttribute("topic", topic);
+        try {
+            if (topic.isBlank()) {
+                model.addAttribute("summary", facade.summarizeDocument(courseId, documentId));
+            } else {
+                // Keep the combined workspace complete after a topic request.
+                // The document summary and topic summary are independent results.
+                model.addAttribute("summary", facade.summarizeDocument(courseId, documentId));
+                model.addAttribute("topicSummary", facade.summarizeTopic(courseId, topic));
+            }
+        }
         catch (InsightGenerationException | IllegalArgumentException exception) { model.addAttribute("insightError", exception.getMessage()); }
         return "learning/summary";
     }

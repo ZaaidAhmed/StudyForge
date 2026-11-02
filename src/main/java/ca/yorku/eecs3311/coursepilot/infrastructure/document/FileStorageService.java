@@ -40,6 +40,16 @@ public class FileStorageService {
         }
     }
 
+    public void deleteStored(String filename) {
+        if (filename == null || filename.isBlank()) return;
+        try {
+            Path target = root.resolve(filename).normalize();
+            if (target.startsWith(root)) Files.deleteIfExists(target);
+        } catch (IOException exception) {
+            // Database deletion remains authoritative; stale files can be cleaned separately.
+        }
+    }
+
     public Path load(String filename) {
         Path target = root.resolve(filename).normalize();
         if (!target.startsWith(root) || !Files.exists(target)) throw new DocumentImportException("The stored material file was not found.");

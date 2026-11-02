@@ -17,6 +17,7 @@ import ca.yorku.eecs3311.coursepilot.application.dto.FlashcardReviewResponse;
 import ca.yorku.eecs3311.coursepilot.application.dto.QuizGenerationResult;
 import ca.yorku.eecs3311.coursepilot.application.dto.QuizResponseDto;
 import ca.yorku.eecs3311.coursepilot.application.dto.QuizAttemptResult;
+import ca.yorku.eecs3311.coursepilot.application.dto.QuizAttemptSummary;
 import ca.yorku.eecs3311.coursepilot.application.dto.GroundedExplanation;
 import ca.yorku.eecs3311.coursepilot.application.service.CourseService;
 import ca.yorku.eecs3311.coursepilot.application.service.CourseMaterialService;
@@ -100,17 +101,30 @@ public class StudyAgentFacade {
         return groundedQuestionService.askDocument(courseId, documentId, question);
     }
     public Resource loadMaterialFile(Long courseId, Long documentId) { return courseMaterialService.loadFile(courseId, documentId); }
+    public void deleteMaterial(Long courseId, Long documentId) { courseMaterialService.deleteMaterial(courseId, documentId); }
     public SummaryResult summarizeDocument(Long courseId, Long documentId) { return summarizationService.summarizeDocument(courseId, documentId); }
     public SummaryResult summarizeTopic(Long courseId, String topic) { return summarizationService.summarizeTopic(courseId, topic); }
     public List<ExtractedConcept> extractConcepts(Long courseId, Long documentId) { return conceptExtractionService.extract(courseId, documentId); }
     public FlashcardGenerationResult generateFlashcards(Long courseId, Long documentId, Integer count) { return flashcardGenerationService.generate(courseId, documentId, count); }
     public List<FlashcardResponse> listFlashcards(Long courseId) { return flashcardReviewService.list(courseId); }
+    public List<FlashcardResponse> listFlashcards(Long courseId, Long documentId) {
+        courseMaterialService.getDocument(courseId, documentId);
+        return flashcardReviewService.list(courseId, documentId);
+    }
     public FlashcardReviewResponse reviewFlashcard(Long courseId, Long cardId, String rating) { return flashcardReviewService.review(courseId, cardId, rating); }
+    public void deleteFlashcard(Long courseId, Long cardId) { flashcardReviewService.delete(courseId, cardId); }
+    public void deleteFlashcardDeck(Long courseId, Long documentId) {
+        courseMaterialService.getDocument(courseId, documentId);
+        flashcardReviewService.deleteDeck(courseId, documentId);
+    }
     public List<FlashcardReviewResponse> flashcardReviewHistory(Long courseId) { return flashcardReviewService.history(courseId); }
     public QuizGenerationResult generateQuiz(Long courseId, Long documentId, Integer count, java.util.Set<String> types) { return quizGenerationService.generate(courseId, documentId, count, types); }
     public List<QuizResponseDto> listQuizzes(Long courseId) { return quizAttemptService.list(courseId); }
     public QuizResponseDto getQuiz(Long courseId, Long quizId) { return quizAttemptService.get(courseId, quizId); }
+    public void deleteQuiz(Long courseId, Long quizId) { quizAttemptService.delete(courseId, quizId); }
     public QuizAttemptResult submitQuiz(Long courseId, Long quizId, java.util.Map<Long,String> answers) { return quizAttemptService.submit(courseId, quizId, answers); }
-    public GroundedExplanation explainWrongAnswer(Long courseId, Long quizId, Long questionId, String answer) { return wrongAnswerExplanationService.explain(courseId, quizId, questionId, answer); }
+    public List<QuizAttemptSummary> listQuizAttempts(Long courseId, Long quizId) { return quizAttemptService.listAttempts(courseId, quizId); }
+    public QuizAttemptResult getQuizAttempt(Long courseId, Long quizId, Long attemptId) { return quizAttemptService.getAttempt(courseId, quizId, attemptId); }
+    public GroundedExplanation explainWrongAnswer(Long courseId, Long quizId, Long attemptId, Long questionId) { return wrongAnswerExplanationService.explain(courseId, quizId, attemptId, questionId); }
     public String agentAssist(Long courseId, String request) { return agentCoordinator.run(courseId, request); }
 }

@@ -1,10 +1,146 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${course.courseCode} + ' materials')}"></head>
-<body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside>
-<main class="content"><a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a><div class="page-heading"><div><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Materials &amp; search</h1><p class="lede">Upload course evidence, confirm it is searchable, then ask grounded questions.</p></div><div class="materials-actions"><a class="button secondary" th:href="@{/courses/{id}/ask(id=${course.id})}">Ask this course</a></div></div>
-<div th:if="${successMessage}" class="alert success" role="status" th:text="${successMessage}"></div><div th:if="${errorMessage}" class="alert error" role="alert" th:text="${errorMessage}"></div>
-<section class="panel form-panel"><h2>1. Upload material</h2><p class="muted">Use lecture PDFs, TXT files, or Markdown notes. Maximum 10 MB.</p><form th:action="@{/courses/{id}/materials(id=${course.id})}" method="post" enctype="multipart/form-data"><div class="form-field"><label for="file">Choose a document</label><input id="file" name="file" type="file" accept=".pdf,.txt,.md" required></div><div class="form-actions"><button class="button primary" type="submit">Upload and process</button></div></form></section>
-<section class="panel search-panel"><div class="section-heading"><div><p class="eyebrow">2. Find evidence</p><h2>Search this course</h2><p class="muted">Searches only ready material in <span th:text="${course.courseCode}">EECS3311</span>. Use this to check what Q&amp;A can reference.</p></div></div><form th:action="@{/courses/{id}/materials/search(id=${course.id})}" method="get" class="search-form"><label class="sr-only" for="query">Search query</label><input id="query" name="q" type="search" th:value="${searchQuery ?: ''}" placeholder="e.g. strategy pattern" required><label for="limit">Results</label><select id="limit" name="limit"><option value="5" th:selected="${limit == null or limit == 5}">5</option><option value="10" th:selected="${limit == 10}">10</option><option value="20" th:selected="${limit == 20}">20</option></select><button class="button primary" type="submit">Search materials</button></form><div th:if="${searchError}" class="alert error" role="alert" th:text="${searchError}"></div><div th:if="${searchPerformed and #lists.isEmpty(searchResults)}" class="empty-state"><h3>No relevant material found</h3><p>Try different words, upload another source, or ask a narrower question.</p><div class="state-actions"><a class="button secondary" th:href="@{/courses/{id}/ask(id=${course.id})}">Ask a question</a><a class="button ghost" th:href="@{/courses/{id}/materials(id=${course.id})}">Upload material</a></div></div><div th:if="${searchPerformed and not #lists.isEmpty(searchResults)}" class="search-results"><article class="search-result" th:each="result, stat : ${searchResults}"><div class="result-number" th:text="${stat.count}">1</div><div><h3 th:text="${result.documentName}">Lecture 6.pdf</h3><p class="muted"><span th:if="${result.pageStart != null}" th:text="${result.pageStart == result.pageEnd ? 'Page: ' + result.pageStart : 'Pages: ' + result.pageStart + '-' + result.pageEnd}">Page: 12</span><span th:if="${result.pageStart == null}" th:text="'Chunk: ' + result.chunkIndex">Chunk: 4</span> · Score <span th:text="${#numbers.formatDecimal(result.score,1,1)}">12.0</span></p><p class="result-snippet" th:text="${result.snippet}">Relevant source text.</p><a class="text-link" th:href="@{/courses/{courseId}/materials/{id}(courseId=${course.id},id=${result.documentId})}">View document details</a></div></article></div></section>
-<section class="panel material-list"><div class="section-heading"><div><p class="eyebrow">3. Course library</p><h2>Uploaded materials</h2><p class="muted">Only ready documents can support grounded answers.</p></div></div><div th:if="${#lists.isEmpty(materials)}" class="empty-state"><div class="empty-icon">+</div><h3>No materials uploaded yet</h3><p>Upload a lecture note or text-based PDF to begin. Then search it before asking CoursePilot.</p><div class="state-actions"><a class="button primary" href="#file">Choose a document</a><a class="button ghost" th:href="@{/courses/{id}/ask(id=${course.id})}">See Q&amp;A</a></div></div><div th:unless="${#lists.isEmpty(materials)}" class="material-grid"><article class="material-card" th:each="material : ${materials}"><div><span class="course-code" th:text="${#strings.toUpperCase(material.fileType)}">PDF</span><h3 th:text="${material.originalFilename}">Lecture 4.pdf</h3><p class="muted"><span class="material-status" th:classappend="${#strings.toLowerCase(material.processingStatus)}" th:text="${material.processingStatus}">READY</span> · <span th:text="${material.chunkCount}">2</span> chunks · <span th:text="${material.extractedCharacterCount}">1200</span> characters<span th:if="${material.pageCount != null}" th:text="| · ${material.pageCount} pages|"></span></p></div><a class="text-link" th:href="@{/courses/{courseId}/materials/{id}(courseId=${course.id},id=${material.id})}">View details →</a></article></div></section>
-</main></body></html>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content materials-page" th:classappend="${searchPerformed ? ' search-page' : ''}">
+    <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
+
+    <div class="page-heading">
+        <div>
+            <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
+            <h1 th:if="${!searchPerformed}">Materials &amp; search</h1>
+            <h1 th:if="${searchPerformed}">Search course materials</h1>
+            <p class="lede" th:if="${!searchPerformed}">Upload course evidence, confirm it is searchable, then ask grounded questions.</p>
+            <p class="lede" th:if="${searchPerformed}">Find supporting passages in the ready material for <strong th:text="${course.name}">Software Design</strong>.</p>
+        </div>
+        <div class="materials-actions">
+            <a class="button secondary" th:href="@{/courses/{id}/ask(id=${course.id})}">Ask this course</a>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert success" role="status" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert error" role="alert" th:text="${errorMessage}"></div>
+
+    <section th:if="${!searchPerformed}" class="panel form-panel">
+        <h2>1. Upload material</h2>
+        <p class="muted">Use lecture PDFs, TXT files, or Markdown notes. Maximum 10 MB.</p>
+        <form th:action="@{/courses/{id}/materials(id=${course.id})}" method="post" enctype="multipart/form-data">
+            <div class="form-field">
+                <label for="file">Choose a document</label>
+                <input id="file" name="file" type="file" accept=".pdf,.txt,.md" required>
+            </div>
+            <div class="form-actions"><button class="button primary" type="submit">Upload and process</button></div>
+        </form>
+    </section>
+
+    <section class="panel search-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Find evidence</p>
+                <h2>Search this course</h2>
+                <p class="muted">Searches only ready material in <span th:text="${course.courseCode}">EECS3311</span>.</p>
+            </div>
+            <span class="search-scope">Course-scoped</span>
+        </div>
+
+        <form th:action="@{/courses/{id}/materials/search(id=${course.id})}" method="get" class="search-form">
+            <label class="sr-only" for="query">Search query</label>
+            <input id="query" name="q" type="search" th:value="${searchQuery ?: ''}" placeholder="Search concepts, lectures, or definitions" required>
+            <label class="results-label" for="limit">Show</label>
+            <select id="limit" name="limit">
+                <option value="5" th:selected="${limit == null or limit == 5}">5 results</option>
+                <option value="10" th:selected="${limit == 10}">10 results</option>
+                <option value="20" th:selected="${limit == 20}">20 results</option>
+            </select>
+            <button class="button primary" type="submit">Search materials</button>
+        </form>
+
+        <div th:if="${searchError}" class="alert error" role="alert" th:text="${searchError}"></div>
+
+        <div th:if="${searchPerformed and #lists.isEmpty(searchResults)}" class="empty-state search-empty">
+            <h3>No relevant material found</h3>
+            <p>Try a broader phrase, upload another source, or ask a narrower question.</p>
+            <div class="state-actions">
+                <a class="button secondary" th:href="@{/courses/{id}/ask(id=${course.id})}">Ask about this course</a>
+                <a class="button ghost" th:href="@{/courses/{id}/materials(id=${course.id})}">Upload material</a>
+            </div>
+        </div>
+
+        <div th:if="${searchPerformed and not #lists.isEmpty(searchResults)}" class="search-results">
+            <div class="search-results-header">
+                <div>
+                    <h3><span th:text="${#lists.size(searchResults)}">3</span> matching passages</h3>
+                    <p class="muted">Results for &quot;<span th:text="${searchQuery}">dependency inversion</span>&quot;</p>
+                </div>
+                <a class="text-link" th:href="@{/courses/{id}/materials(id=${course.id})}">Back to materials</a>
+            </div>
+
+            <article class="search-result" th:each="result, stat : ${searchResults}">
+                <div class="result-number" th:text="${stat.count}">1</div>
+                <div class="result-content">
+                    <div class="result-heading">
+                        <div>
+                            <p class="result-label">Course evidence</p>
+                            <h3 th:text="${result.documentName}">Lecture 6.pdf</h3>
+                        </div>
+                        <span class="result-score" th:text="|Score ${#numbers.formatDecimal(result.score,1,1)}|">Score 12.0</span>
+                    </div>
+                    <p class="result-meta">
+                        <span class="result-location" th:if="${result.pageStart != null}" th:text="${result.pageStart == result.pageEnd ? 'Page ' + result.pageStart : 'Pages ' + result.pageStart + '-' + result.pageEnd}">Page 12</span>
+                        <span class="result-location" th:if="${result.pageStart == null}" th:text="'Chunk ' + result.chunkIndex">Chunk 4</span>
+                        <span class="meta-separator">|</span>
+                        <span th:text="|Chunk ID ${result.chunkId}|">Chunk ID 42</span>
+                    </p>
+                    <p class="result-snippet" th:text="${result.snippet}">Relevant source text.</p>
+                    <div class="result-actions">
+                        <a class="button secondary" th:href="@{/courses/{courseId}/materials/{id}(courseId=${course.id},id=${result.documentId})}">Open document</a>
+                        <a class="text-link" th:href="@{/courses/{courseId}/materials/{id}(courseId=${course.id},id=${result.documentId})}">View details</a>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section th:if="${!searchPerformed}" class="panel material-list">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">3. Course library</p>
+                <h2>Uploaded materials</h2>
+                <p class="muted">Only ready documents can support grounded answers.</p>
+            </div>
+        </div>
+        <div th:if="${#lists.isEmpty(materials)}" class="empty-state">
+            <div class="empty-icon">+</div>
+            <h3>No materials uploaded yet</h3>
+            <p>Upload a lecture note or text-based PDF to begin.</p>
+            <div class="state-actions">
+                <a class="button primary" href="#file">Choose a document</a>
+                <a class="button ghost" th:href="@{/courses/{id}/ask(id=${course.id})}">See Q&amp;A</a>
+            </div>
+        </div>
+        <div th:unless="${#lists.isEmpty(materials)}" class="material-grid">
+            <article class="material-card" th:each="material : ${materials}">
+                <div>
+                    <span class="course-code" th:text="${#strings.toUpperCase(material.fileType)}">PDF</span>
+                    <h3 th:text="${material.originalFilename}">Lecture 4.pdf</h3>
+                    <p class="muted">
+                        <span class="material-status" th:classappend="${#strings.toLowerCase(material.processingStatus)}" th:text="${material.processingStatus}">READY</span>
+                        - <span th:text="${material.chunkCount}">2</span> chunks
+                        - <span th:text="${material.extractedCharacterCount}">1200</span> characters
+                        <span th:if="${material.pageCount != null}" th:text="| - ${material.pageCount} pages|"></span>
+                    </p>
+                </div>
+                <div class="material-card-actions">
+                    <a class="text-link" th:href="@{/courses/{courseId}/materials/{id}(courseId=${course.id},id=${material.id})}">View details</a>
+                    <form method="post" th:action="@{/courses/{courseId}/materials/{id}/delete(courseId=${course.id},id=${material.id})}" onsubmit="return confirm('Delete this uploaded material and generated study content based on it? This cannot be undone.');">
+                        <button class="button danger" type="submit">Delete</button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+</body>
+</html>

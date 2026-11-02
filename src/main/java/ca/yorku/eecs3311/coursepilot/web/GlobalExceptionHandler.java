@@ -3,9 +3,13 @@ package ca.yorku.eecs3311.coursepilot.web;
 import ca.yorku.eecs3311.coursepilot.application.service.CourseNotFoundException;
 import ca.yorku.eecs3311.coursepilot.application.service.DuplicateCourseCodeException;
 import ca.yorku.eecs3311.coursepilot.application.service.DocumentNotFoundException;
+import ca.yorku.eecs3311.coursepilot.application.error.ApplicationException;
+import ca.yorku.eecs3311.coursepilot.application.error.ApplicationErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ui.Model;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -15,8 +19,10 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(CourseNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public String courseNotFound(CourseNotFoundException exception, Model model) {
         model.addAttribute("errorTitle", "Course not found");
+        model.addAttribute("errorCode", ApplicationErrorCode.COURSE_NOT_FOUND.name());
         model.addAttribute("errorMessage", exception.getMessage());
         return "error/application-error";
     }
@@ -24,20 +30,33 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateCourseCodeException.class)
     public String duplicateCourse(DuplicateCourseCodeException exception, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        redirectAttributes.addFlashAttribute("errorCode", ApplicationErrorCode.VALIDATION_ERROR.name());
         return "redirect:/courses";
     }
 
     @ExceptionHandler(DocumentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public String documentNotFound(DocumentNotFoundException exception, Model model) {
         model.addAttribute("errorTitle", "Material not found");
+        model.addAttribute("errorCode", ApplicationErrorCode.DOCUMENT_NOT_FOUND.name());
+        model.addAttribute("errorMessage", exception.getMessage());
+        return "error/application-error";
+    }
+
+    @ExceptionHandler(ApplicationException.class)
+    public String expectedApplicationError(ApplicationException exception, Model model) {
+        model.addAttribute("errorTitle", "Request could not be completed");
+        model.addAttribute("errorCode", exception.code().name());
         model.addAttribute("errorMessage", exception.getMessage());
         return "error/application-error";
     }
 
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public String unexpected(Exception exception, Model model) {
         log.error("Unexpected web error", exception);
         model.addAttribute("errorTitle", "Something went wrong");
+        model.addAttribute("errorCode", "INTERNAL_ERROR");
         model.addAttribute("errorMessage", "CoursePilot could not complete that request.");
         return "error/application-error";
     }

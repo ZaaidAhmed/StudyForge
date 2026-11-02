@@ -120,4 +120,12 @@ public class MaterialController {
         }
         return "redirect:/courses/" + courseId + "/materials";
     }
+
+    @PostMapping("/{documentId}/delete")
+    public String delete(@PathVariable Long courseId, @PathVariable Long documentId,
+                         RedirectAttributes redirectAttributes) {
+        facade.deleteMaterial(courseId, documentId);
+        redirectAttributes.addFlashAttribute("successMessage", "Material was deleted.");
+        return "redirect:/courses/" + courseId + "/materials";
+    }
 }

@@ -1,1 +1,41 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('Concepts')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside><main class="content learning-content"><a class="back-link" th:href="@{/courses/{courseId}/materials/{id}(courseId=${course.id},id=${material.id})}">Back to document</a><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Concepts from this document</h1><p class="lede">Important concepts and definitions supported only by <strong th:text="${material.originalFilename}">document.pdf</strong>.</p><section class="panel insight-panel"><div th:if="${insightError}" class="alert error" role="alert" th:text="${insightError}"></div><div th:unless="${concepts}"><h2>Extract study concepts</h2><p class="muted">CoursePilot will return a structured, source-linked concept list.</p><form method="post" th:action="@{/courses/{courseId}/materials/{id}/concepts(courseId=${course.id},id=${material.id})}"><button class="button primary" type="submit">Extract concepts</button></form></div><div th:if="${concepts != null and #lists.isEmpty(concepts)}" class="empty-state"><h2>No concepts found</h2><p>Try another document or upload more material.</p></div><div th:if="${concepts != null and not #lists.isEmpty(concepts)}" class="concept-list"><article class="concept-card" th:each="concept : ${concepts}"><h2 th:text="${concept.name}">Strategy Pattern</h2><p th:text="${concept.definition}">Definition</p><h3>Sources</h3><ul><li th:each="source : ${concept.sources}" th:text="${source.sourceId + ' · ' + source.documentName + ' · ' + (source.pageStart != null ? 'Page ' + source.pageStart : 'Chunk ' + source.chunkIndex)}">S1</li></ul></article></div></section><div class="state-actions"><a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">All materials</a><a class="button ghost" th:href="@{/courses/{courseId}/materials/{id}/summary(courseId=${course.id},id=${material.id})}">Summarize document</a></div></main></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Concepts')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content learning-content concepts-page">
+    <a class="back-link" th:href="@{/courses/{courseId}/materials/{id}(courseId=${course.id},id=${material.id})}">Back to document</a>
+    <div class="concepts-page-heading">
+        <div><p class="eyebrow" th:text="${course.courseCode}">EECS3221</p><h1>Key concepts</h1><p class="lede">A source-linked study guide for <strong th:text="${material.originalFilename}">document.pdf</strong>.</p></div>
+        <a class="button secondary" th:href="@{/courses/{courseId}/materials/{id}/chat(courseId=${course.id},id=${material.id})}">Ask about this document</a>
+    </div>
+    <section class="panel concept-generate-panel" th:unless="${concepts}">
+        <div class="concepts-panel-icon" aria-hidden="true">◇</div><div><p class="eyebrow">BUILD YOUR STUDY GUIDE</p><h2>Extract concepts from this document</h2><p class="muted">StudyForge will identify important terms, explain them in plain language, and connect each concept to supporting pages or chunks.</p>
+            <div th:if="${insightError}" class="alert error" role="alert" th:text="${insightError}"></div>
+            <form data-progress-operation="concepts" method="post" th:action="@{/courses/{courseId}/materials/{id}/concepts(courseId=${course.id},id=${material.id})}"><button class="button primary" type="submit">Extract key concepts</button></form>
+        </div>
+    </section>
+    <div th:if="${concepts != null and #lists.isEmpty(concepts)}" class="panel empty-state concepts-empty"><div class="concepts-panel-icon" aria-hidden="true">◇</div><div><h2>No concepts found</h2><p>There was not enough structured material to extract concepts from this document.</p><div class="state-actions"><a class="button secondary" th:href="@{/courses/{courseId}/materials/{id}/chat(courseId=${course.id},id=${material.id})}">Ask the document tutor</a><a class="button ghost" th:href="@{/courses/{id}/materials(id=${course.id})}">Choose another document</a></div></div></div>
+    <div th:if="${concepts != null and #lists.isEmpty(concepts)}" class="state-actions concepts-retry-action">
+        <form data-progress-operation="concepts-retry" method="post" th:action="@{/courses/{courseId}/materials/{id}/concepts(courseId=${course.id},id=${material.id})}"><button class="button primary" type="submit">Try extraction again</button></form>
+    </div>
+    <section th:if="${concepts != null and not #lists.isEmpty(concepts)}" class="concept-results" aria-labelledby="concept-results-heading">
+        <div class="concept-results-heading"><div><p class="eyebrow">SOURCE-LINKED STUDY GUIDE</p><h2 id="concept-results-heading" th:text="${#lists.size(concepts) + ' concepts to review'}">8 concepts to review</h2></div><a class="button ghost" th:href="@{/courses/{courseId}/materials/{id}/summary(courseId=${course.id},id=${material.id})}">Summarize document</a></div>
+        <div class="concept-list">
+            <article class="concept-card" th:each="concept, iteration : ${concepts}">
+                <header class="concept-card-header"><span class="concept-number" th:text="${iteration.index + 1 < 10 ? '0' + (iteration.index + 1) : iteration.index + 1}">01</span><div><p class="concept-label">CONCEPT</p><h3 th:text="${concept.name}">Implicit threading</h3></div></header>
+                <div class="concept-definition"><span>Definition</span><p th:text="${concept.definition}">Definition</p></div>
+                <div class="concept-example" th:if="${concept.example != null and !#strings.isEmpty(concept.example)}"><span>Example from the material</span><p th:text="${concept.example}">Example</p></div>
+                <div class="concept-evidence" th:if="${!#lists.isEmpty(concept.sources)}"><div class="concept-evidence-heading"><strong>Supporting evidence</strong><span th:text="${#lists.size(concept.sources) + ' source(s)'}">2 sources</span></div><div class="concept-source-list">
+                    <a class="concept-source" th:each="source : ${concept.sources}" th:href="@{/courses/{courseId}/materials/{documentId}/chat(courseId=${course.id},documentId=${source.documentId},page=${source.pageStart != null ? source.pageStart : 1})}">
+                        <span class="concept-source-top"><strong th:text="${source.sourceId}">S1</strong><span th:text="${source.pageStart != null ? (source.pageStart == source.pageEnd ? 'Page ' + source.pageStart : 'Pages ' + source.pageStart + '-' + source.pageEnd) : 'Chunk ' + source.chunkIndex}">Page 12</span></span><span class="concept-source-document" th:text="${source.documentName}">document.pdf</span><span class="concept-source-snippet" th:text="${source.snippet}">Relevant evidence from the uploaded material.</span><span class="concept-source-action">Open in Study Studio →</span>
+                    </a>
+                </div></div>
+            </article>
+        </div>
+    </section>
+    <div class="state-actions"><a class="button secondary" th:href="@{/courses/{id}/materials(id=${course.id})}">All materials</a><a class="button ghost" th:href="@{/courses/{courseId}/materials/{id}/summary(courseId=${course.id},id=${material.id})}">Summarize document</a></div>
+</main>
+</body>
+</html>

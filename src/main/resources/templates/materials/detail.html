@@ -1,9 +1,228 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${material.originalFilename})}"></head>
-<body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside>
-<main class="content document-content"><a class="back-link" th:href="@{/courses/{id}/materials(id=${course.id})}">Back to materials</a><div class="document-heading"><div><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1 th:text="${material.originalFilename}">Lecture 4.pdf</h1><p class="lede">Read this material, summarize it, extract concepts, or ask questions grounded only in this document.</p></div><div class="materials-actions"><a class="button secondary" th:if="${material.processingStatus == 'READY'}" th:href="@{/courses/{courseId}/materials/{id}/summary(courseId=${course.id},id=${material.id})}">Summarize</a><a class="button secondary" th:if="${material.processingStatus == 'READY'}" th:href="@{/courses/{courseId}/materials/{id}/concepts(courseId=${course.id},id=${material.id})}">Extract concepts</a><a class="button ghost" th:href="@{/courses/{id}/ask(id=${course.id})}">Ask about course</a></div></div>
-<div class="document-workspace"><section class="document-viewer panel" aria-label="Document preview"><div class="viewer-toolbar"><strong th:text="${material.originalFilename}">Lecture 4.pdf</strong><a class="text-link" target="_blank" rel="noopener" th:href="@{/courses/{courseId}/materials/{id}/file(courseId=${course.id},id=${material.id})}">Open full document</a></div><iframe class="document-frame" title="Document preview" th:src="@{/courses/{courseId}/materials/{id}/file(courseId=${course.id},id=${material.id})}"></iframe><div class="document-meta"><span class="material-status ready" th:text="${material.processingStatus}">READY</span><span th:text="${material.chunkCount + ' chunks'}">10 chunks</span><span th:if="${material.pageCount != null}" th:text="${material.pageCount + ' pages'}">27 pages</span></div></section>
-<section class="document-chat panel" aria-labelledby="chat-heading"><div class="chat-header"><p class="eyebrow">Document Q&amp;A</p><h2 id="chat-heading">Ask this PDF</h2><p class="muted">Answers are restricted to <strong th:text="${material.originalFilename}">this document</strong>.</p></div><div class="chat-answer" th:if="${answer}"><div class="chat-message assistant"><span class="chat-avatar">CP</span><div><p class="chat-greeting">Grounded answer</p><p class="answer-text" th:text="${answer.answer}">Answer</p><div th:if="${answer.insufficientContext}" class="alert" role="status">This document did not contain enough evidence. Try a narrower question.</div><div th:unless="${#lists.isEmpty(answer.sources)}" class="chat-sources"><strong>Sources in this document</strong><ol class="source-list"><li th:each="source : ${answer.sources}"><span th:text="${source.sourceId + ' · ' + (source.pageStart != null ? 'Page ' + source.pageStart : 'Chunk ' + source.chunkIndex) + ' · ' + source.snippet}">S1 · Page 12</span></li></ol></div></div></div></div><div th:if="${chatError}" class="alert error" role="alert" th:text="${chatError}"></div><form id="document-chat-form" class="chat-form" th:action="@{/courses/{courseId}/materials/{id}/chat(courseId=${course.id},id=${material.id})}" method="post"><label class="sr-only" for="document-question">Ask a question about this document</label><textarea id="document-question" name="question" rows="3" maxlength="1000" required th:text="${question}" placeholder="Ask about this document..."></textarea><div class="chat-form-footer"><span class="muted">Document-only answers · max 1000 characters</span><button id="document-ask-submit" class="button primary" type="submit">Ask question</button></div><p id="document-chat-status" class="muted" aria-live="polite"></p></form><div class="suggested-questions"><span class="muted">Try asking:</span><button type="button" class="example-question" data-document-question="Summarize the main ideas in this document.">Summarize the main ideas</button><button type="button" class="example-question" data-document-question="What definitions should I remember from this PDF?">Key definitions</button></div></section></div>
-<section class="panel document-details"><h2>Document details</h2><div class="metadata-grid"><div><dt>Status</dt><dd th:text="${material.processingStatus}">READY</dd></div><div><dt>File type</dt><dd th:text="${#strings.toUpperCase(material.fileType)}">PDF</dd></div><div><dt>Characters</dt><dd th:text="${material.extractedCharacterCount}">8158</dd></div><div><dt>Uploaded</dt><dd th:text="${material.uploadedAt}">2026-09-19</dd></div></div></section>
-</main><script>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('[data-document-question]').forEach(function(b){b.addEventListener('click',function(){const q=document.getElementById('document-question');q.value=b.dataset.documentQuestion;q.focus();});});const f=document.getElementById('document-chat-form');if(f){f.addEventListener('submit',function(){const b=document.getElementById('document-ask-submit'),s=document.getElementById('document-chat-status');b.disabled=true;b.textContent='Reading document…';s.textContent='Searching this document and preparing an answer.';});}});</script></body></html>
+<body class="study-studio-page">
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+
+<main id="main-content" class="content study-studio-content"
+      th:attr="data-page-count=${material.pageCount == null ? 1 : material.pageCount},data-page-url=@{/courses/{courseId}/materials/{id}/page(courseId=${course.id},id=${material.id})},data-file-type=${material.fileType},data-initial-page=${readerPage},data-notes-key=|studyforge-notes-${course.id}-${material.id}|,data-chat-key=|studyforge-chat-${course.id}-${material.id}|">
+    <div class="studio-toolbar">
+        <div class="studio-document-select">
+            <label class="sr-only" for="studio-document-select">Choose a course document</label>
+            <select id="studio-document-select" aria-label="Choose a course document">
+                <option th:each="document : ${materials}"
+                        th:value="${document.id}"
+                        th:selected="${document.id == material.id}"
+                        th:attr="data-url=@{/courses/{courseId}/materials/{documentId}(courseId=${course.id},documentId=${document.id})}"
+                        th:text="${document.originalFilename}">Lecture 4.pdf</option>
+            </select>
+        </div>
+
+        <div class="studio-page-controls" aria-label="Document page controls">
+            <button class="studio-icon-button" type="button" id="studio-page-previous" aria-label="Previous page"
+                    th:disabled="${material.pageCount == null}">‹</button>
+            <span id="studio-page-label" aria-live="polite"
+                  th:text="|Page ${readerPage} of ${material.pageCount == null ? 1 : material.pageCount}|">Page 1 of 27</span>
+            <button class="studio-icon-button" type="button" id="studio-page-next" aria-label="Next page"
+                    th:disabled="${material.pageCount == null}">›</button>
+        </div>
+
+        <div class="studio-citation-status" th:if="${answer != null and !#lists.isEmpty(answer.sources)}">
+            <span class="studio-status-dot"></span>
+            <span>Active citation</span>
+            <button type="button" class="studio-active-citation"
+                    th:with="source=${answer.sources[0]}"
+                    th:attr="data-citation-page=${source.pageStart != null ? source.pageStart : 1}"
+                    th:text="${source.sourceId + ' · ' + (source.pageStart != null ? 'Page ' + source.pageStart : 'Chunk ' + source.chunkIndex)}">S1 · Page 12</button>
+        </div>
+        <div class="studio-citation-status" th:unless="${answer != null and !#lists.isEmpty(answer.sources)}">
+            <span class="studio-status-dot"></span>
+            <span>Document-grounded</span>
+        </div>
+
+        <div class="studio-view-modes" role="group" aria-label="Study Studio layout">
+            <button type="button" class="studio-mode-button is-active" data-view-mode="split" aria-pressed="true">Split View</button>
+            <button type="button" class="studio-mode-button" data-view-mode="reader" aria-pressed="false">Reader Only</button>
+            <button type="button" class="studio-mode-button" data-view-mode="tutor" aria-pressed="false">Tutor Only</button>
+        </div>
+    </div>
+
+    <div class="studio-workspace" data-view-mode="split">
+        <section class="studio-reader-pane" aria-label="Document reader">
+            <div class="studio-reader-heading">
+                <div>
+                    <p class="studio-eyebrow" th:text="${course.courseCode + ' · COURSE MATERIAL'}">EECS3311 · COURSE MATERIAL</p>
+                    <h1 th:text="${material.originalFilename}">Lecture 4.pdf</h1>
+                </div>
+                <a class="studio-open-document" target="_blank" rel="noopener"
+                   th:href="@{/courses/{courseId}/materials/{id}/file(courseId=${course.id},id=${material.id})}">Open document ↗</a>
+            </div>
+            <form class="material-delete-form" method="post" th:action="@{/courses/{courseId}/materials/{id}/delete(courseId=${course.id},id=${material.id})}"
+                  onsubmit="return confirm('Delete this uploaded material and generated study content based on it? This cannot be undone.');">
+                <button class="button danger" type="submit">Delete material</button>
+            </form>
+            <div class="studio-document-frame">
+                <img th:if="${#strings.equalsIgnoreCase(material.fileType, 'pdf')}"
+                     id="studio-document-page-placeholder" class="studio-document-page-placeholder"
+                     alt="" aria-hidden="true" hidden>
+                <div th:if="${#strings.equalsIgnoreCase(material.fileType, 'pdf')}"
+                     id="studio-document-pages" class="studio-document-pages"
+                     aria-label="All pages of the selected PDF"></div>
+                <div th:unless="${#strings.equalsIgnoreCase(material.fileType, 'pdf')}"
+                     class="studio-preview-unavailable" role="status">
+                    <strong>Text preview</strong>
+                    <span>This material does not have paginated preview pages. Use the tutor or open the original document.</span>
+                </div>
+                <p id="studio-page-error" class="studio-page-error" role="alert" hidden>
+                    This page preview could not be loaded. Use “Open document” to view the original file.
+                </p>
+            </div>
+        </section>
+
+        <aside class="studio-tutor-pane" aria-label="Study assistant">
+            <header class="studio-tutor-header">
+                <div class="studio-tutor-title">
+                    <span class="studio-tutor-avatar" aria-hidden="true">SF</span>
+                    <div>
+                        <h2>StudyForge Tutor</h2>
+                        <p>Grounded in this document</p>
+                    </div>
+                    <span class="studio-grounded-badge"><span class="studio-status-dot"></span> Grounded</span>
+                </div>
+                <div class="studio-tabs" role="tablist" aria-label="Study tools">
+                    <button id="studio-tutor-tab" type="button" role="tab" aria-selected="true"
+                            aria-controls="studio-tutor-panel" data-studio-tab="studio-tutor-panel">AI Tutor</button>
+                    <button id="studio-notes-tab" type="button" role="tab" aria-selected="false"
+                            aria-controls="studio-notes-panel" data-studio-tab="studio-notes-panel">My Notes</button>
+                    <button id="studio-outline-tab" type="button" role="tab" aria-selected="false"
+                            aria-controls="studio-outline-panel" data-studio-tab="studio-outline-panel">Outline</button>
+                    <button id="studio-clear-chat" class="studio-clear-chat" type="button">Clear chat</button>
+                </div>
+            </header>
+
+            <section id="studio-tutor-panel" class="studio-tool-panel" role="tabpanel" aria-labelledby="studio-tutor-tab">
+                <div class="studio-conversation">
+                    <div class="studio-welcome" th:unless="${answer != null or chatError != null}">
+                        <span class="studio-welcome-icon" aria-hidden="true">✦</span>
+                        <p class="studio-eyebrow">YOUR DOCUMENT TUTOR</p>
+                        <h3>What would you like to understand?</h3>
+                        <p>Ask a question and get an answer grounded in the material you are reading.</p>
+                    </div>
+
+                    <div class="studio-message studio-user-message" th:if="${question != null and !#strings.isEmpty(question)}">
+                        <div class="studio-message-bubble">
+                            <span class="studio-message-label">You</span>
+                            <p th:text="${question}">What is the main idea?</p>
+                        </div>
+                    </div>
+
+                    <article class="studio-message studio-tutor-message studio-answer-card" th:if="${answer != null}">
+                        <div class="studio-answer-byline">
+                            <span class="studio-small-avatar" aria-hidden="true">SF</span>
+                            <strong>StudyForge Tutor</strong>
+                            <span>Document-grounded answer</span>
+                        </div>
+                        <div class="studio-answer-text" id="studio-answer-text" th:text="${answer.answer}">Answer</div>
+                        <p th:if="${answer.insufficientContext}" class="studio-insufficient-context" role="status">
+                            This document did not contain enough evidence. Try a narrower question.
+                        </p>
+                        <div class="studio-sources" th:if="${!#lists.isEmpty(answer.sources)}">
+                            <div class="studio-section-label">
+                                <strong>Supporting evidence</strong>
+                                <span th:text="${#lists.size(answer.sources) + ' source(s)'}">2 sources</span>
+                            </div>
+                            <button type="button" class="studio-source-card" th:each="source : ${answer.sources}"
+                                    th:attr="data-citation-page=${source.pageStart != null ? source.pageStart : 1}"
+                                    aria-label="Jump to supporting evidence in the document">
+                                <span class="studio-source-reference"
+                                      th:text="${source.sourceId + ' · ' + (source.pageStart != null ? 'Page ' + source.pageStart : 'Chunk ' + source.chunkIndex)}">S1 · Page 12</span>
+                                <span th:text="${source.snippet}">Relevant source text</span>
+                            </button>
+                        </div>
+                        <div class="studio-answer-actions">
+                            <span>Study this answer</span>
+                            <button type="button" class="studio-action-link" id="studio-save-answer">Save to notes</button>
+                            <a th:href="@{/courses/{id}/flashcards(id=${course.id})}">Flashcards</a>
+                            <a th:href="@{/courses/{id}/quizzes(id=${course.id})}">Practice quiz</a>
+                        </div>
+                    </article>
+
+                    <div class="studio-message studio-tutor-message" th:if="${chatError}">
+                        <div class="studio-chat-error" role="alert" th:text="${chatError}"></div>
+                    </div>
+
+                    <div class="studio-suggestions" th:unless="${answer != null}">
+                        <p>Try asking</p>
+                        <button type="button" data-document-question="Summarize the main ideas in this document.">Summarize the main ideas <span>→</span></button>
+                        <button type="button" data-document-question="What definitions should I remember from this document?">Find key definitions <span>→</span></button>
+                        <button type="button" data-document-question="Explain the most important concept in this document.">Explain a key concept <span>→</span></button>
+                    </div>
+                </div>
+
+                <form id="document-chat-form" class="studio-chat-form" data-progress-operation="question"
+                      th:action="@{/courses/{courseId}/materials/{id}/chat(courseId=${course.id},id=${material.id})}" method="post">
+                    <label class="sr-only" for="document-question">Ask the tutor a question about this document</label>
+                    <textarea id="document-question" name="question" rows="2" maxlength="1000" required
+                              th:text="${chatError != null ? question : ''}" placeholder="Ask a question about this document..."></textarea>
+                    <input type="hidden" name="page" id="studio-reader-page-input" th:value="${readerPage}">
+                    <div class="studio-composer-footer">
+                        <span>Answers use this document only</span>
+                        <button id="document-ask-submit" type="submit" aria-label="Send question">Ask <span aria-hidden="true">↑</span></button>
+                    </div>
+                    <p id="document-chat-status" class="sr-only" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <section id="studio-notes-panel" class="studio-tool-panel studio-hidden-panel" role="tabpanel"
+                     aria-labelledby="studio-notes-tab" hidden>
+                <div class="studio-notes-content">
+                    <p class="studio-eyebrow">YOUR STUDY SPACE</p>
+                    <h3>Notes for this document</h3>
+                    <p class="studio-note-storage">Notes are saved in this browser for this course document.</p>
+                    <label class="sr-only" for="studio-note-input">Write a note</label>
+                    <textarea id="studio-note-input" rows="4" placeholder="Capture an idea, question, or reminder..."></textarea>
+                    <div class="studio-note-controls">
+                        <span id="studio-note-status" role="status" aria-live="polite"></span>
+                        <button type="button" id="studio-add-note">Add note</button>
+                    </div>
+                    <div id="studio-note-list" class="studio-note-list" aria-live="polite"></div>
+                </div>
+            </section>
+
+            <section id="studio-outline-panel" class="studio-tool-panel studio-hidden-panel" role="tabpanel"
+                     aria-labelledby="studio-outline-tab" hidden>
+                <div class="studio-outline-content">
+                    <p class="studio-eyebrow">DOCUMENT GUIDE</p>
+                    <h3>Build your outline</h3>
+                    <p>This document does not have a generated outline yet. Start with a summary or extract its key concepts.</p>
+                    <a class="studio-outline-link" th:if="${material.processingStatus == 'READY'}"
+                       th:href="@{/courses/{courseId}/materials/{id}/summary(courseId=${course.id},id=${material.id})}">
+                        <span class="studio-outline-icon" aria-hidden="true">≡</span>
+                        <span><strong>Generate a summary</strong><small>Review the main ideas from this document</small></span>
+                        <span aria-hidden="true">→</span>
+                    </a>
+                    <a class="studio-outline-link" th:if="${material.processingStatus == 'READY'}"
+                       th:href="@{/courses/{courseId}/materials/{id}/concepts(courseId=${course.id},id=${material.id})}">
+                        <span class="studio-outline-icon" aria-hidden="true">◇</span>
+                        <span><strong>Extract key concepts</strong><small>Explore terms and their relationships</small></span>
+                        <span aria-hidden="true">→</span>
+                    </a>
+                    <a class="studio-outline-link" th:href="@{/courses/{courseId}/materials/{id}/summary(courseId=${course.id},id=${material.id})}">
+                        <span class="studio-outline-icon" aria-hidden="true">T</span>
+                        <span><strong>Summarize a topic</strong><small>Summarize a topic across this course</small></span>
+                        <span aria-hidden="true">-&gt;</span>
+                    </a>
+                    <div class="studio-outline-meta">
+                        <span>File type</span><strong th:text="${#strings.toUpperCase(material.fileType)}">PDF</strong>
+                        <span>Pages</span><strong th:text="${material.pageCount == null ? 'Not available' : material.pageCount}">27</strong>
+                        <span>Processing</span><strong th:text="${material.processingStatus}">READY</strong>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</main>
+<script th:src="@{/js/study-studio.js(v=12)}" defer></script>
+</body>
+</html>

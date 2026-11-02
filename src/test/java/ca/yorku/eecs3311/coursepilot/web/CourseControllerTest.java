@@ -16,6 +16,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.time.LocalDate;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.any;
@@ -55,9 +56,39 @@ class CourseControllerTest {
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                         .string(org.hamcrest.Matchers.containsString("Open Study Studio")))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("href=\"/courses/7/studio\"")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                         .string(org.hamcrest.Matchers.containsString("Indexed chunks")))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                         .string(org.hamcrest.Matchers.containsString("Start a review to build a learning signal.")));
+    }
+
+    @Test
+    void courseOverviewProvidesAnEditCourseAction() throws Exception {
+        when(facade.getCourse(7L)).thenReturn(new CourseResponse(7L, "EECS3311", "Software Design", "Course notes", null, null, null));
+        when(facade.listMaterials(7L)).thenReturn(List.of());
+        when(progressService.summarize(7L)).thenReturn(new ProgressSummary(7L, "Software Design", 0, 0, "NOT_STARTED", List.of()));
+        when(recommendationService.recommend(7L)).thenReturn(new Recommendation(
+                "UPLOAD_MATERIAL", "Add course material to begin.", "Upload material", "/courses/7/materials"));
+
+        mockMvc.perform(get("/courses/7"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("Edit course")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("href=\"/courses/7/edit\"")));
+    }
+
+    @Test
+    void editCourseFormPrefillsTheStoredExamDate() throws Exception {
+        when(facade.getCourse(7L)).thenReturn(new CourseResponse(7L, "EECS3311", "Software Design", "Course notes",
+                LocalDate.of(2026, 12, 21), null, null));
+
+        mockMvc.perform(get("/courses/7/edit"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("courses/form"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .string(org.hamcrest.Matchers.containsString("id=\"examDate\" name=\"examDate\" type=\"date\" value=\"2026-12-21\"")));
     }
 
     @Test
@@ -103,5 +134,15 @@ class CourseControllerTest {
                         .string(org.hamcrest.Matchers.containsString("already exists")))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                         .string(org.hamcrest.Matchers.containsString("Software Design")));
+    }
+
+    @Test
+    void deleteCourseRemovesCourseAndRedirectsToCourseList() throws Exception {
+        mockMvc.perform(post("/courses/7/delete"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl("/courses"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash().attribute("successMessage", "Course was deleted."));
+
+        org.mockito.Mockito.verify(facade).deleteCourse(7L);
     }
 }

@@ -39,7 +39,10 @@ class CourseMaterialServiceTest {
 
         var service = new CourseMaterialService(courses, documents, chunks, new DocumentValidator(1000), new HashService(),
                 new FileStorageService(tempDir.toString()), new DocumentExtractorFactory(java.util.List.of(new ca.yorku.eecs3311.coursepilot.infrastructure.document.TextDocumentExtractor())),
-                new TextNormalizer(), new TextChunker(1200, 150));
+                new TextNormalizer(), new TextChunker(1200, 150), mock(ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardRepository.class),
+                mock(ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardReviewRepository.class),
+                mock(ca.yorku.eecs3311.coursepilot.domain.repository.QuizAttemptRepository.class),
+                mock(ca.yorku.eecs3311.coursepilot.domain.repository.QuizRepository.class));
 
         assertThatThrownBy(() -> service.importMaterial(1L, "copy.txt", "text/plain", "notes".getBytes()))
                 .isInstanceOf(DuplicateDocumentException.class)
@@ -59,7 +62,10 @@ class CourseMaterialServiceTest {
 
         var service = new CourseMaterialService(courses, documents, chunks, new DocumentValidator(1000), new HashService(),
                 new FileStorageService(tempDir.toString()), new DocumentExtractorFactory(java.util.List.of(new ca.yorku.eecs3311.coursepilot.infrastructure.document.TextDocumentExtractor())),
-                new TextNormalizer(), new TextChunker(1200, 150));
+                new TextNormalizer(), new TextChunker(1200, 150), mock(ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardRepository.class),
+                mock(ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardReviewRepository.class),
+                mock(ca.yorku.eecs3311.coursepilot.domain.repository.QuizAttemptRepository.class),
+                mock(ca.yorku.eecs3311.coursepilot.domain.repository.QuizRepository.class));
 
         assertThatThrownBy(() -> service.getDocument(2L, 7L))
                 .isInstanceOf(DocumentNotFoundException.class);
