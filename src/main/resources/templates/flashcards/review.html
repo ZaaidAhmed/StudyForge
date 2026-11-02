@@ -1,1 +1,197 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('Review flashcards')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside><main class="content learning-content"><a class="back-link" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Back to flashcards</a><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Review flashcards</h1><div th:if="${reviewMessage}" class="alert success" role="status" th:text="${reviewMessage}"></div><div th:if="${flashcardError}" class="alert error" role="alert" th:text="${flashcardError}"></div><div th:if="${#lists.isEmpty(flashcards)}" class="empty-state"><h2>No flashcards to review</h2><p>Generate a deck from ready course material first.</p><a class="button primary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Generate flashcards</a></div><section th:unless="${#lists.isEmpty(flashcards)}" class="review-list"><article class="panel review-card" th:each="card, stat : ${flashcards}"><p class="eyebrow" th:text="'Card ' + ${stat.count} + ' of ' + ${flashcards.size()}">Card 1 of 10</p><h2>Question</h2><p class="review-question" th:text="${card.question}">Question</p><button class="button secondary reveal-button" type="button">Reveal answer</button><div class="revealed-answer" hidden><h2>Answer</h2><p th:text="${card.answer}">Answer</p><p class="muted" th:each="source : ${card.sources}" th:text="${source.documentName + ' · ' + (source.pageStart != null ? 'Page ' + source.pageStart : 'Chunk ' + source.chunkIndex)}">Source</p><h3>Rate this card</h3><form class="rating-actions" method="post" th:action="@{/courses/{courseId}/flashcards/{cardId}/review(courseId=${course.id},cardId=${card.id})}"><button class="button rating" name="rating" value="INCORRECT" type="submit">Incorrect</button><button class="button rating" name="rating" value="HARD" type="submit">Hard</button><button class="button rating" name="rating" value="GOOD" type="submit">Good</button><button class="button rating" name="rating" value="EASY" type="submit">Easy</button></form></div></article></section></main><script>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.reveal-button').forEach(function(b){b.addEventListener('click',function(){const a=b.parentElement.querySelector('.revealed-answer');a.hidden=false;b.hidden=true;});});});</script></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Review flashcards')}"></head>
+<body class="flashcard-practice-page">
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content learning-content flashcard-session">
+    <div class="flashcard-session-top">
+        <div class="flashcard-review-context" th:if="${!reviewAll}">Reviewing: <strong th:text="${reviewDocumentName}">document.pdf</strong></div>
+        <div class="flashcard-review-context" th:if="${reviewAll}">Reviewing: <strong>all course cards</strong></div>
+        <a class="flashcard-exit" th:href="@{/courses/{id}/flashcards(id=${course.id})}"><span aria-hidden="true">×</span> Exit practice</a>
+        <p class="flashcard-session-count" aria-live="polite">
+            <span th:text="${reviewComplete ? flashcards.size() : (flashcards.isEmpty() ? 0 : cardIndex + 1)}">1</span>
+            <span aria-hidden="true">/</span>
+            <span th:text="${flashcards.size()}">10</span>
+        </p>
+    </div>
+
+    <div th:if="${reviewMessage}" class="alert success flashcard-session-message" role="status" th:text="${reviewMessage}"></div>
+    <div th:if="${flashcardError}" class="alert error flashcard-session-message" role="alert" th:text="${flashcardError}"></div>
+
+    <section th:if="${#lists.isEmpty(flashcards)}" class="flashcard-empty">
+        <h1>No flashcards to review</h1>
+        <p>Generate a deck from ready course material first.</p>
+        <a class="button primary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Generate flashcards</a>
+    </section>
+
+    <section th:unless="${#lists.isEmpty(flashcards)}" id="flashcard-session"
+             class="flashcard-session-content"
+             th:attr="data-current-index=${cardIndex},data-review-complete=${reviewComplete}">
+        <h1 class="sr-only">Review flashcards</h1>
+        <div class="flashcard-stage">
+            <article class="flashcard-study-card" th:each="card, stat : ${flashcards}"
+                     th:hidden="${stat.index != cardIndex or reviewComplete}"
+                     th:attr="data-card-index=${stat.index}">
+                <button class="flashcard-surface flashcard-question" type="button" data-reveal>
+                    <span class="flashcard-question-text" th:text="${card.question}">Question</span>
+                    <span class="flashcard-click-hint">Click or press Space to reveal the answer</span>
+                </button>
+                <div class="flashcard-surface flashcard-answer" role="button" tabindex="0"
+                     aria-label="Click or press Space to show the question" data-reveal hidden>
+                    <span class="flashcard-answer-label">Answer</span>
+                    <p class="flashcard-answer-text" th:text="${card.answer}">Answer</p>
+                    <ul class="flashcard-sources" th:if="${!#lists.isEmpty(card.sources)}">
+                        <li th:each="source : ${card.sources}"
+                            th:text="${source.documentName + ' · ' + (source.pageStart != null ? 'Page ' + source.pageStart : 'Chunk ' + source.chunkIndex)}">Source</li>
+                    </ul>
+                    <span class="flashcard-click-hint">Click or press Space to show the question</span>
+                </div>
+                <div class="flashcard-ratings" hidden>
+                    <p class="flashcard-rate-prompt">How well did you know it?</p>
+                    <form class="flashcard-rating-actions" method="post"
+                          th:action="@{/courses/{courseId}/flashcards/{cardId}/review(courseId=${course.id},cardId=${card.id})}">
+                        <input type="hidden" name="cardIndex" th:value="${stat.index}">
+                        <input type="hidden" name="documentId" th:if="${!reviewAll}" th:value="${reviewDocumentId}">
+                        <button class="flashcard-rating-choice learning" type="submit" name="rating" value="HARD" data-shortcut="1">
+                            <span>Learning</span><kbd>1</kbd>
+                        </button>
+                        <button class="flashcard-rating-choice familiar" type="submit" name="rating" value="GOOD" data-shortcut="2">
+                            <span>Familiar</span><kbd>2</kbd>
+                        </button>
+                        <button class="flashcard-rating-choice mastered" type="submit" name="rating" value="EASY" data-shortcut="3">
+                            <span>Mastered</span><kbd>3</kbd>
+                        </button>
+                    </form>
+                </div>
+                <form class="flashcard-review-delete" method="post"
+                      th:action="@{/courses/{courseId}/flashcards/{cardId}/delete(courseId=${course.id},cardId=${card.id})}"
+                      onsubmit="return confirm('Delete this flashcard?');">
+                    <button class="flashcard-delete" type="submit"
+                            th:aria-label="${'Delete flashcard ' + (stat.index + 1)}">Delete this card</button>
+                </form>
+            </article>
+
+            <section th:if="${reviewComplete}" class="flashcard-complete">
+                <p class="eyebrow">Practice complete</p>
+                <h2 th:if="${reviewAll}">You reviewed every card in this course.</h2>
+                <h2 th:unless="${reviewAll}">You reviewed every card in this document deck.</h2>
+                <p>Your ratings have been saved to your course progress.</p>
+                <a class="button primary" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Back to flashcards</a>
+            </section>
+        </div>
+
+        <footer class="flashcard-session-footer" th:unless="${reviewComplete}">
+            <div class="flashcard-progress-track" role="progressbar" aria-label="Review progress"
+                 th:attr="aria-valuenow=${flashcards.isEmpty() ? 0 : (reviewComplete ? 100 : (cardIndex + 1) * 100 / flashcards.size())},aria-valuemin=0,aria-valuemax=100">
+                <span data-progress-fill
+                      th:style="|width: ${reviewComplete ? 100 : (cardIndex + 1) * 100 / flashcards.size()}%|"></span>
+            </div>
+            <div class="flashcard-session-controls">
+                <button class="flashcard-nav-button" type="button" data-previous aria-label="Previous card"
+                        th:disabled="${cardIndex == 0}">←</button>
+                <button class="flashcard-flip-button" type="button" data-flip>Show answer</button>
+                <button class="flashcard-nav-button" type="button" data-next aria-label="Next card"
+                        th:disabled="${cardIndex >= flashcards.size() - 1}">→</button>
+            </div>
+            <p class="flashcard-shortcuts">
+                <span><kbd>Space</kbd> flip card</span>
+                <span><kbd>←</kbd> <kbd>→</kbd> navigate</span>
+                <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> rate after reveal</span>
+            </p>
+        </footer>
+    </section>
+</main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const session = document.getElementById('flashcard-session');
+    if (!session) return;
+
+    const cards = Array.from(session.querySelectorAll('.flashcard-study-card'));
+    if (!cards.length || session.dataset.reviewComplete === 'true') return;
+
+    let currentIndex = Number(session.dataset.currentIndex);
+    const counter = document.querySelector('.flashcard-session-count span');
+    const progress = session.querySelector('[data-progress-fill]');
+    const previous = session.querySelector('[data-previous]');
+    const next = session.querySelector('[data-next]');
+    const flipButton = session.querySelector('[data-flip]');
+
+    function reveal(card, showAnswer) {
+        card.querySelector('.flashcard-question').hidden = showAnswer;
+        card.querySelector('.flashcard-answer').hidden = !showAnswer;
+        card.querySelector('.flashcard-ratings').hidden = !showAnswer;
+        flipButton.textContent = showAnswer ? 'Show question' : 'Show answer';
+    }
+
+    function updateCard() {
+        cards.forEach(function (card, index) {
+            card.hidden = index !== currentIndex;
+        });
+        const card = cards[currentIndex];
+        counter.textContent = String(currentIndex + 1);
+        progress.style.width = ((currentIndex + 1) * 100 / cards.length) + '%';
+        previous.disabled = currentIndex === 0;
+        next.disabled = currentIndex === cards.length - 1;
+        flipButton.hidden = false;
+        reveal(card, !card.querySelector('.flashcard-answer').hidden);
+    }
+
+    function moveTo(index) {
+        if (index < 0 || index >= cards.length) return;
+        currentIndex = index;
+        updateCard();
+    }
+
+    function flipCurrentCard() {
+        const card = cards[currentIndex];
+        reveal(card, card.querySelector('.flashcard-answer').hidden);
+    }
+
+    cards.forEach(function (card) {
+        card.querySelectorAll('[data-reveal]').forEach(function (surface) {
+            surface.addEventListener('click', function () {
+                flipCurrentCard();
+                flipButton.focus();
+            });
+        });
+        card.querySelector('.flashcard-answer').addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                event.preventDefault();
+                event.stopPropagation();
+                flipCurrentCard();
+                flipButton.focus();
+            }
+        });
+    });
+    previous.addEventListener('click', function () { moveTo(currentIndex - 1); });
+    next.addEventListener('click', function () { moveTo(currentIndex + 1); });
+    flipButton.addEventListener('click', flipCurrentCard);
+
+    document.addEventListener('keydown', function (event) {
+        if (event.altKey || event.ctrlKey || event.metaKey
+                || event.target.matches('input, textarea, select, [contenteditable="true"]')
+                || (event.key === ' ' && event.target.closest('button, a'))) return;
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            moveTo(currentIndex - 1);
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            moveTo(currentIndex + 1);
+        } else if (event.key === ' ' || event.key === 'Spacebar') {
+            event.preventDefault();
+            flipCurrentCard();
+        } else if (['1', '2', '3'].includes(event.key)) {
+            const rateButton = cards[currentIndex].querySelector('[data-shortcut="' + event.key + '"]');
+            if (rateButton && !cards[currentIndex].querySelector('.flashcard-answer').hidden) {
+                event.preventDefault();
+                rateButton.form.requestSubmit(rateButton);
+            }
+        }
+    });
+
+    updateCard();
+});
+</script>
+</body>
+</html>

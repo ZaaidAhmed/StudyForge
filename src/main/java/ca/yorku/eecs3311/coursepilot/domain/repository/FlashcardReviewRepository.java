@@ -8,4 +8,5 @@ import java.util.List;
 public interface FlashcardReviewRepository extends JpaRepository<FlashcardReview, Long> {
     @Query("select r from FlashcardReview r join fetch r.flashcard f where f.course.id = :courseId order by r.id asc")
     List<FlashcardReview> findByCourseIdOrderByIdAsc(@Param("courseId") Long courseId);
+    List<FlashcardReview> findByFlashcardId(Long flashcardId);
 }

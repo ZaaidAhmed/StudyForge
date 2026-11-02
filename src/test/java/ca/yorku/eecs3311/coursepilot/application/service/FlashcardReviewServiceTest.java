@@ -6,6 +6,7 @@ import ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardRepository;
 import ca.yorku.eecs3311.coursepilot.domain.repository.FlashcardReviewRepository;
 import org.junit.jupiter.api.Test;
 import java.util.Optional;
+import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -36,5 +37,36 @@ class FlashcardReviewServiceTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> new FlashcardReviewService(courses, cards, reviews).review(1L, 7L, "MAYBE"))
                 .isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(reviews);
+    }
+
+    @Test
+    void deleteRemovesReviewsAndOnlyTheOwnedFlashcard() {
+        CourseService courses = mock(CourseService.class);
+        FlashcardRepository cards = mock(FlashcardRepository.class);
+        FlashcardReviewRepository reviews = mock(FlashcardReviewRepository.class);
+        Flashcard card = mock(Flashcard.class);
+        FlashcardReview review = mock(FlashcardReview.class);
+        when(cards.findByIdAndCourseIdWithSources(7L, 1L)).thenReturn(Optional.of(card));
+        when(reviews.findByFlashcardId(7L)).thenReturn(List.of(review));
+
+        new FlashcardReviewService(courses, cards, reviews).delete(1L, 7L);
+
+        verify(reviews).deleteAll(List.of(review));
+        verify(cards).delete(card);
+    }
+
+    @Test
+    void deleteDeckRemovesOnlyCardsFromTheSelectedDocument() {
+        CourseService courses = mock(CourseService.class);
+        FlashcardRepository cards = mock(FlashcardRepository.class);
+        FlashcardReviewRepository reviews = mock(FlashcardReviewRepository.class);
+        Flashcard card = mock(Flashcard.class);
+        when(card.getId()).thenReturn(7L);
+        when(cards.findByCourseIdAndSourceDocumentIdWithSources(1L, 9L)).thenReturn(List.of(card));
+
+        new FlashcardReviewService(courses, cards, reviews).deleteDeck(1L, 9L);
+
+        verify(reviews).findByFlashcardId(7L);
+        verify(cards).deleteAll(List.of(card));
     }
 }
