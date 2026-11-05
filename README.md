@@ -1,239 +1,241 @@
 # StudyForge AI
 
-StudyForge AI is an adaptive study and learning agent for the EECS3311 Fall 2026 course project. It combines deterministic course-learning software with a provider-neutral, grounded AI layer and a bounded multi-step study agent.
+StudyForge is a course-scoped study workspace for importing materials, asking grounded questions, generating practice content, tracking learning activity, and planning study sessions. The web application uses Spring MVC and Thymeleaf; the CLI uses Picocli. Both share the same services and local H2 database.
 
-## Prerequisites
+## Contents
+
+- [Start here](#start-here)
+- [Run the web application](#run-the-web-application)
+- [Run the CLI](#run-the-cli)
+- [F01-F15 feature and CLI guide](#f01-f15-feature-and-cli-guide)
+- [Choose a local or hosted AI provider](#choose-a-local-or-hosted-ai-provider)
+- [Project map](#project-map)
+- [Design and demonstration documentation](#design-and-demonstration-documentation)
+- [Configuration and data](#configuration-and-data)
+- [Limitations](#limitations)
+
+## Start here
+
+### Requirements
 
 - Java 21
-- Maven 3.9+
+- Maven 3.9 or newer
+- Ollama is optional for local AI. Gemini requires an API key for hosted AI.
 
-No Node/npm, Docker, or external database server is required.
+No Node.js, Docker, or external database server is needed to run the application. Node.js is only needed for the optional browser demo recorder in `scripts/`.
 
-## Build and test
+### Windows PowerShell
 
-```text
-mvn clean test
+Run these commands from the repository root. If `java` is not on `PATH`, set `JAVA_HOME` to your Java 21 installation first:
+
+```powershell
+$env:JAVA_HOME = 'C:\path\to\jdk-21'
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
 ```
 
-The test profile uses isolated in-memory H2. Development data uses file-based H2 under `./data/coursepilot` and uploaded files under `./data/uploads`; both are excluded from Git.
+```powershell
+java -version
+mvn -version
+mvn clean test
+mvn package
+```
+
+### macOS or Linux
+
+```bash
+java -version
+mvn -version
+mvn clean test
+mvn package
+```
+
+`mvn package` builds the executable JAR at `target/studyforge-ai-0.1.0-SNAPSHOT.jar` and runs the tests as part of the Maven package lifecycle.
+If you use Maven Daemon, substitute `mvnd` for `mvn` in these commands.
 
 ## Run the web application
+
+From the repository root:
 
 ```text
 mvn spring-boot:run
 ```
 
-Open `http://localhost:8080/`. Create or open a course to see its evidence-backed next step, learning summary, and study tools. **Open Study Studio** opens the first ready document in the split reader-and-tutor workspace; if no ready document exists, it takes you to the course library to upload one. Use **Materials library** to upload PDF, TXT, or Markdown files. The application validates the extension, size, and content, calculates SHA-256, rejects same-course duplicates, stores a generated safe filename, extracts UTF-8/PDF text, normalizes it, chunks it, and persists document metadata and chunks.
+Open [http://localhost:8080](http://localhost:8080), choose a course, and use its materials and study tools. Stop the server with `Ctrl+C`.
 
-The Materials page also provides deterministic lexical search scoped to the current course. Search combines exact-phrase matching, term coverage, bounded term frequency, and a modest filename boost. It is not semantic search and does not use an LLM, embeddings, or a vector database.
+To run the packaged JAR instead:
 
-Configuration defaults:
-
-- `coursepilot.storage.upload-dir=./data/uploads`
-- `coursepilot.storage.max-file-size=10485760` (10 MB)
-- `coursepilot.retrieval.chunk-size=1200`
-- `coursepilot.retrieval.chunk-overlap=150`
-
-Text-based PDFs are supported. OCR is not implemented, so image-only/scanned PDFs may be rejected when no extractable text is present.
+```text
+java -jar target/studyforge-ai-0.1.0-SNAPSHOT.jar
+```
 
 ## Run the CLI
 
-The CLI uses a separate non-web Spring entry point while sharing `StudyAgentFacade` and `CourseService` with the web application:
+Build the JAR first with `mvn package`. Run CLI commands from the repository root so the CLI uses the same `.env`, H2 database, and uploaded files as the web app.
 
-PowerShell example (quote the `-D` argument so PowerShell passes it intact):
+### Windows PowerShell launcher
 
-```powershell
-mvn -q dependency:build-classpath '-Dmdep.outputFile=target\cp.txt'
-$cp = (Resolve-Path target\classes).Path + ';' + (Get-Content -Raw target\cp.txt).Trim()
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication course list
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication course create --code EECS3311 --name "Software Design"
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication course show --course EECS3311
-```
-
-The CLI and web application share the same `StudyAgentFacade`, service layer, and file-based H2 data.
-
-Material commands use the course code and share the same import service:
+Define this function once in the current PowerShell window:
 
 ```powershell
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication material add --course EECS3311 --file .\notes.md
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication material list --course EECS3311
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication material show --course EECS3311 --id 1
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication material search --course EECS3311 --query "strategy pattern" --limit 5
+function sf {
+    & java '-Dspring.main.web-application-type=none' '-Dspring.profiles.active=cli' `
+        -jar '.\target\studyforge-ai-0.1.0-SNAPSHOT.jar' @args
+}
 ```
 
-Search defaults to 5 results and accepts a maximum of 20. Queries with no relevant material return a friendly empty result. Search results preserve document name, chunk index, and PDF page metadata where available.
+### macOS/Linux launcher
 
-## AI foundation and grounded learning
+Define this function once in the current terminal:
 
-The provider-neutral AI foundation now supports grounded Q&A, document/topic summaries, concept extraction, flashcards, quizzes, short-answer grading, wrong-answer explanations, and bounded agent assistance. Ollama and Gemini are accessed through `LlmClient` adapters using Java's HTTP client and Jackson. Provider availability is checked only when requested and all calls use bounded timeouts.
-
-Configuration is overrideable with Spring properties. The recommended local model is `qwen3:4b`, which uses substantially less memory and is faster for grounded quiz, flashcard, summary, and concept generation on typical student hardware. `qwen-claude-14b:latest` remains available as a quality fallback if the smaller model produces weaker results:
-
-```properties
-coursepilot.ai.enabled=true
-coursepilot.ai.provider=ollama
-coursepilot.ai.base-url=http://localhost:11434
-coursepilot.ai.model=qwen3:4b
-coursepilot.ai.connect-timeout=2s
-coursepilot.ai.request-timeout=180s
+```bash
+sf() {
+  java -Dspring.main.web-application-type=none \
+    -Dspring.profiles.active=cli \
+    -jar target/studyforge-ai-0.1.0-SNAPSHOT.jar "$@"
+}
 ```
 
-Switch models from **AI status** for the current running session, or change `COURSEPILOT_AI_MODEL` in `.env` for the persistent choice after restart. The status page only offers explicitly supported models for the selected provider. Both Ollama models run locally; Gemini sends bounded retrieved excerpts to Google's hosted API.
+Check the available commands and options:
 
-Quiz generation uses bounded three-question batches and a smaller grounded context so larger requests such as 20 questions do not get truncated as one oversized model response.
-
-Use `studyforge ai status` to inspect availability. Ask a grounded question from `/courses/{id}/ask` or with `studyforge ask --course EECS3311 --question "..."`. Each question retrieves only that course's relevant material first, bounds the context, requires structured JSON, and validates returned source IDs. If Ollama is stopped, the application still starts and deterministic course/material/search features remain available.
-
-To use Gemini, put the key in the ignored project-root `.env` file and add:
-
-```env
-COURSEPILOT_AI_PROVIDER=gemini
-COURSEPILOT_AI_BASE_URL=https://generativelanguage.googleapis.com
-COURSEPILOT_AI_MODEL=gemini-3.5-flash-lite
-GEMINI_API_KEY=your_key_here
+```text
+sf --help
+sf course --help
+sf material --help
+sf study-plan create --help
 ```
 
-StudyForge loads `.env` for local development without printing its values. Real environment variables take precedence. Gemini sends bounded retrieved course excerpts to Google's hosted API, so use Ollama for material that must remain local. Gemini free-tier availability and quotas vary by account and model; rate limits can produce an actionable unavailable status.
+Start by checking your course code and the material IDs in that course:
 
-The web workflow is course-first: open a course, use the three-step workspace to upload material, search it, and then ask StudyForge. The sidebar labels implemented tools separately from planned features, and unavailable AI/material states include recovery actions.
-
-To ask questions about one specific uploaded document, open its **View details** link from the course library. PDFs open in a split document workspace with an inline preview and **Ask this PDF** panel. Document Q&amp;A uses only that document's retrieved chunks; course-wide Q&amp;A remains available from the course workspace.
-
-## Project structure
-
-- `src/main/java/ca/yorku/eecs3311/coursepilot/` - layered application code
-- `src/main/resources/templates/` - Thymeleaf GUI
-- `src/main/resources/static/` - custom CSS
-- `src/test/` - deterministic and MVC tests
-- `docs/` - approved Stage 1 design and Stage 2 traceability artifacts
-
-## How the project works
-
-The web application and CLI share the same application facade and services. Material is validated, extracted, and chunked before it is used by deterministic search or grounded AI study tools. Persistent course and study data stays in local H2 and uploaded files stay in the local data directory.
-
-```mermaid
-flowchart TB
-    learner([Learner])
-
-    subgraph interfaces["Ways to use StudyForge"]
-        direction LR
-        web["Web interface<br/>Spring MVC + Thymeleaf"]
-        cli["CLI<br/>Picocli"]
-    end
-
-    subgraph app["Shared StudyForge application"]
-        direction TB
-        webControllers["Web controllers"]
-        cliCommands["CLI commands"]
-        facade["StudyAgentFacade<br/>shared application facade"]
-
-        subgraph services["Course and learning services"]
-            direction LR
-            courseMaterial["Courses and material<br/>validation, extraction, chunking"]
-            lexical["Course-scoped lexical search<br/>deterministic; no LLM"]
-            grounded["Grounded learning tools<br/>Q&A, summaries, concepts"]
-            practice["Practice tools<br/>quiz/card generation, attempts, review"]
-            insights["Study plans, progress,<br/>history, recommendations"]
-            agent["Study agent<br/>bounded plan and whitelisted tools"]
-        end
-
-        evidence["Evidence pipeline<br/>select chunks and bound context"]
-        llmClient["Provider-neutral LlmClient<br/>Ollama HTTP adapter"]
-        validate["Structured response parsing<br/>and source-ID validation"]
-    end
-
-    subgraph local["Local persistence and AI"]
-        direction LR
-        db[("H2 file database<br/>courses, chunks, quizzes,<br/>cards, reviews, plans")]
-        files[("Upload directory<br/>PDF, TXT, Markdown")]
-        ollama["Ollama model<br/>runs locally"]
-    end
-
-    learner --> web
-    learner --> cli
-    web --> webControllers
-    cli --> cliCommands
-    webControllers --> facade
-    cliCommands --> facade
-    facade --> courseMaterial
-    facade --> lexical
-    facade --> grounded
-    facade --> practice
-    facade --> insights
-    facade --> agent
-
-    courseMaterial --> files
-    courseMaterial --> db
-    lexical --> db
-    grounded --> evidence
-    practice --> evidence
-    evidence -->|reads course chunks| db
-    evidence --> llmClient
-    agent --> llmClient
-    llmClient -->|request| ollama
-    ollama -->|response| llmClient
-    llmClient --> validate
-    validate --> grounded
-    validate --> practice
-    practice --> db
-    insights --> db
-    agent -.->|whitelisted tool calls| lexical
-    agent -.->|whitelisted tool calls| grounded
-    agent -.->|whitelisted tool calls| practice
-    agent -.->|whitelisted tool calls| insights
-
-    classDef interface fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b,stroke-width:1.5px;
-    classDef core fill:#f5f3ff,stroke:#7c3aed,color:#2e1065,stroke-width:1.5px;
-    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
-    classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
-
-    class learner,web,cli,webControllers,cliCommands interface;
-    class facade,courseMaterial,lexical,grounded,practice,insights,agent,evidence,llmClient,validate core;
-    class db,files data;
-    class ollama external;
+```text
+sf course list
+sf course show --course EECS3221
+sf material list --course EECS3221
 ```
 
-## Current limitations
+Use a document ID returned by `material list` for commands that take `--document`. Replace the sample course code and IDs below with values from your own course.
 
-Summarization and concept quality depends on the configured model; lexical retrieval is not semantic search, grounding reduces but cannot eliminate hallucination risk, and OCR remains future backlog work for image-only PDFs. No embeddings or vector database is used. The agent uses bounded observable plans and whitelisted tools; it does not execute shell, filesystem, SQL, or arbitrary HTTP actions.
+## F01-F15 feature and CLI guide
 
-## Summaries and concepts
+These are the CLI commands implemented by the application. F09 and F10 are GUI-only workflows; F15 uses environment configuration because the CLI has no provider-switch subcommand.
 
-From a ready document workspace, choose **Summarize** or **Extract concepts**. Document summaries use only that document's persisted chunks and display the source document/chunk/page metadata used. Topic summaries are available from the course Materials page; they run deterministic course-scoped lexical search first and do not call the model when no relevant evidence exists. The Concepts navigation page lets you choose a ready document.
+| Feature | CLI commands | Notes |
+|---|---|---|
+| F01 - Course management | `sf course list`; `sf course create --code EECS3311 --name "Software Design"`; `sf course show --course EECS3311` | Create, list, and show courses. |
+| F02 - Material import and processing | `sf material add --course EECS3221 --file .\notes.md`; `sf material list --course EECS3221`; `sf material show --course EECS3221 --id 8` | Add accepts PDF, TXT, and Markdown files. Use the ID shown by `material list`. |
+| F03 - Material search | `sf material search --course EECS3221 --query "CPU scheduling" --limit 5` | `--limit` is optional; the default is 5 and the maximum is 20. |
+| F04 - Grounded course Q&A | `sf ask --course EECS3221 --question "What is a thread?"` | Answers from the selected course's available material. |
+| F05 - Document and topic summaries | `sf summary document --course EECS3221 --document 8`; `sf summary topic --course EECS3221 --topic "CPU scheduling"` | Document IDs come from `material list`. |
+| F06 - Concept extraction | `sf concepts extract --course EECS3221 --document 8` | Extracts concepts from one ready document. |
+| F07 - Flashcards | `sf flashcards generate --course EECS3221 --document 8 --count 10`; `sf flashcards list --course EECS3221`; `sf flashcards review --course EECS3221 --card 1 --rating GOOD` | Ratings: `INCORRECT`, `HARD`, `GOOD`, or `EASY`. |
+| F08 - Quiz generation | `sf quiz generate --course EECS3221 --document 8 --count 10`; `sf quiz list --course EECS3221` | CLI generates and lists quizzes. Quiz-taking is F09. |
+| F09 - Quiz taking and grading | No CLI command | Take and submit quizzes in the web application. |
+| F10 - Wrong-answer explanation | No CLI command | Request an explanation from an incorrect answer in the web quiz results. |
+| F11 - Progress and weak topics | `sf progress --course EECS3221` | Reports the course progress summary and topic results. |
+| F12 - Study plans | `sf study-plan create --course EECS3221 --start 2026-11-05 --target 2026-11-19 --minutes 120 --strategy BALANCED`; `sf study-plan list --course EECS3221` | Strategies: `BALANCED`, `WEAK_TOPIC_FOCUSED`, or `EXAM_CRAM` (shown as Exam focused in the UI). |
+| F13 - Recommendations and agent assistance | `sf recommend --course EECS3221`; `sf agent --course EECS3221 --request "Help me study what I am weakest at"` | The agent is limited to supported course-study actions. |
+| F14 - Learning history and bounded memory | `sf history --course EECS3221` | Shows course-scoped learning activity. |
+| F15 - Local/cloud AI provider selection | Set provider environment variables, then run `sf ai status` | There is no `ai switch` CLI command. See [provider setup](#choose-a-local-or-hosted-ai-provider). |
 
-Summaries return a structured overview and key points. Concepts return structured names, definitions, and sources; duplicate names are merged deterministically. Model-returned source IDs are validated against StudyForge-owned sources, and unready documents, malformed responses, provider outages, and invalid references produce controlled errors. Context is bounded at 12,000 characters by default, with source order preserved. Results are request-based and are not persisted yet.
+The same CLI commands work in PowerShell and Bash after defining the shell-specific `sf` function above. In PowerShell, quote file paths containing spaces, for example `--file '.\class notes.pdf'`.
 
-CLI examples:
+## Choose a local or hosted AI provider
+
+AI features require a reachable configured provider. Deterministic course, material, and progress features remain available without AI. The AI status command reports which provider and model the CLI process is using:
+
+```text
+sf ai status
+```
+
+### Local Ollama
+
+Install and start Ollama separately, then download one of the supported models if it is not already installed:
+
+```text
+ollama list
+ollama pull qwen3:4b
+```
+
+PowerShell configuration for the current terminal:
 
 ```powershell
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication summary document --course EECS3311 --document 6
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication summary topic --course EECS3311 --topic "SOLID principles"
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication concepts extract --course EECS3311 --document 6
+$env:COURSEPILOT_AI_PROVIDER = 'ollama'
+$env:COURSEPILOT_AI_MODEL = 'qwen3:4b'
+$env:COURSEPILOT_AI_BASE_URL = 'http://localhost:11434'
+sf ai status
 ```
 
-## Flashcards and review
+macOS/Linux configuration for the current terminal:
 
-Open **Flashcards** from a course workspace, choose a READY document, and request 5–20 cards. Generation uses only persisted chunks from that document, validates structured output and source IDs, removes duplicate questions deterministically, and persists valid cards with document/chunk/page provenance. Existing cards remain reviewable when Ollama is offline.
+```bash
+export COURSEPILOT_AI_PROVIDER=ollama
+export COURSEPILOT_AI_MODEL=qwen3:4b
+export COURSEPILOT_AI_BASE_URL=http://localhost:11434
+sf ai status
+```
 
-Review cards at `/courses/{courseId}/flashcards/review`: reveal the answer, then rate each card **Incorrect**, **Hard**, **Good**, or **Easy**. Every rating is stored as an append-only review event; no AI call, spaced repetition, or progress analysis is used for review.
+The other supported Ollama model is `qwen-claude-14b:latest`.
+
+### Hosted Gemini
+
+Set the key in your shell environment; do not commit it or put a real key in a shared file.
+
+PowerShell:
 
 ```powershell
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication flashcards generate --course EECS3311 --document 6 --count 10
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication flashcards list --course EECS3311
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication flashcards review --course EECS3311 --card 1 --rating GOOD
+$env:COURSEPILOT_AI_PROVIDER = 'gemini'
+$env:COURSEPILOT_AI_MODEL = 'gemini-3.5-flash-lite'
+$env:COURSEPILOT_AI_BASE_URL = 'https://generativelanguage.googleapis.com'
+$env:GEMINI_API_KEY = '<your-gemini-api-key>'
+sf ai status
 ```
 
-## F08–F14 and agent assistance
+macOS/Linux:
 
-The course workspace now includes Quizzes, Progress, Study Plan, Next step, History, and Agent assistance. Quiz generation is grounded in a selected READY document; objective answers are graded deterministically, while short-answer grading and wrong-answer explanations use the provider-neutral `LlmClient` with controlled offline behavior. Progress uses transparent thresholds: below 60 is `WEAK`, 60–79.9 is `DEVELOPING`, and 80 or above is `STRONG`.
-
-Study plans are persisted and use the Strategy pattern with Balanced, Weak Topic Focused, and Exam Cram strategies. History is course-scoped and derived from persisted reviews, quiz attempts, and plans. The agent accepts a higher-level study request, validates a bounded observable plan, executes only whitelisted course tools, and synthesizes a safe response.
-
-```powershell
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication quiz list --course EECS3311
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication progress --course EECS3311
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication study-plan list --course EECS3311
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication history --course EECS3311
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication recommend --course EECS3311
-java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication agent --course EECS3311 --request "Help me study what I am weakest at"
+```bash
+export COURSEPILOT_AI_PROVIDER=gemini
+export COURSEPILOT_AI_MODEL=gemini-3.5-flash-lite
+export COURSEPILOT_AI_BASE_URL=https://generativelanguage.googleapis.com
+export GEMINI_API_KEY='<your-gemini-api-key>'
+sf ai status
 ```
+
+Other supported Gemini models are `gemini-3.8-flash` and `gemini-2.5-flash`. Shell environment variables apply to processes launched from that terminal. For a persistent local setting, copy `.env.example` to `.env`, set the provider/model and any required key there, then restart the application. The local `.env` file is ignored by Git.
+
+## Project map
+
+| Path | What it contains |
+|---|---|
+| `src/main/java/.../application/` | Use cases, services, and application DTOs shared by web and CLI. |
+| `src/main/java/.../domain/` | Course and learning entities, repository contracts, and domain rules. |
+| `src/main/java/.../infrastructure/` | H2 repositories, document extraction/storage, AI adapters, and provider routing. |
+| `src/main/java/.../web/` | Spring MVC controllers and web view models. |
+| `src/main/java/.../cli/` | Picocli commands and the non-web CLI entry point. |
+| `src/main/resources/templates/` | Thymeleaf pages and layouts. |
+| `src/main/resources/static/` | Application CSS and JavaScript. |
+| `src/test/` | Unit, service, and MVC tests. |
+| `docs/stage1/` and `docs/stage2/` | Feature requirements, architecture, traceability, demos, and delivery records. |
+| `scripts/` | Verification and optional local demo-recording tools. |
+| `data/` | Local H2 database and uploaded material files; generated at runtime and not committed. |
+
+## Design and demonstration documentation
+
+- [Stage 1 feature specifications](docs/stage1/02-feature-specifications.md)
+- [Stage 1 architecture](docs/stage1/07-architecture.md)
+- [Stage 2 implementation traceability](docs/stage2/design-to-implementation-traceability.md)
+- [F01-F15 demo index](docs/stage2/demo-index.md)
+- [Weekly commit summary](docs/stage2/weekly-commit-summary.md)
+- [Local demo recorder instructions](scripts/README.md)
+
+## Configuration and data
+
+- `.env.example` documents local AI settings. Copy it to `.env` for local overrides; never commit API keys.
+- Real process environment variables take precedence over `.env` values.
+- H2 data is stored under `./data/coursepilot`; uploaded documents are stored under `./data/uploads`.
+- Default upload limit is 10 MB. Text-based PDF, TXT, and Markdown files are supported.
+
+## Limitations
+
+- OCR for image-only/scanned PDFs is not implemented.
+- Material retrieval is deterministic lexical search; there are no embeddings or vector database.
+- AI output quality depends on the configured provider/model. Grounding and source validation reduce, but cannot eliminate, model errors.
+- F09 quiz taking/grading and F10 wrong-answer explanations are GUI workflows; the CLI does not expose those operations.
