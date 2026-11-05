@@ -32,6 +32,19 @@ class RecommendationServiceTest {
     }
 
     @Test
+    void quizPerformanceIsNotMisreportedAsAWeakCourseTopic() {
+        when(progress.summarize(9L)).thenReturn(new ProgressSummary(9L, "Design", 3, 46, "WEAK", List.of(
+                new ProgressSummary.TopicProgress("CPU Scheduling", 72, "DEVELOPING", 2),
+                new ProgressSummary.TopicProgress("Quiz performance", 20, "WEAK", 1))));
+
+        var result = service.recommend(9L);
+
+        assertThat(result.action()).isEqualTo("STUDY_TOPIC");
+        assertThat(result.reason()).contains("CPU Scheduling", "tracked learning signal")
+                .doesNotContain("Quiz performance", "weakest course topic");
+    }
+
+    @Test
     void recommendsQuizAfterRecentFlashcardReview() {
         when(progress.summarize(9L)).thenReturn(new ProgressSummary(9L, "Design", 1, 100, "STRONG", List.of(
                 new ProgressSummary.TopicProgress("SOLID", 100, "STRONG", 1))));

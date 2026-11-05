@@ -7,19 +7,20 @@
 <main id="main-content" class="content learning-content study-plan-page">
     <a class="back-link" th:href="@{/courses/{id}/insights(id=${course.id})}">Back to insights</a>
     <header class="study-plan-header">
-        <div><p class="eyebrow" th:text="${course.courseCode}">EECS3221</p><h1>Study Plan</h1><p class="lede">Create an optimized learning schedule powered by your course activity.</p></div>
-        <a class="button secondary" th:href="@{/courses/{id}/progress(id=${course.id})}">View progress</a>
+        <div><p class="eyebrow" th:text="${course.courseCode}">EECS3221</p><p class="study-plan-course-name" th:text="${course.name}">Operating Systems</p><h1>Study Plan</h1><p class="lede">Your review plan for <span th:text="${course.name}">Operating Systems</span>, based on your saved activity and course materials.</p></div>
+        <a class="button primary hero-plan-action" href="#create-plan-heading">Generate AI Study Plan</a>
     </header>
+    <section class="ai-plan-banner" aria-label="AI study planning guidance"><span class="ai-banner-mark" aria-hidden="true">AI</span><div><p class="eyebrow">Course-aware planning</p><h2>Turn your next study hours into a clear path forward.</h2><p>StudyForge uses your course activity and selected strategy to build a practical schedule you can follow.</p></div><a class="text-link" th:href="@{/courses/{id}/progress(id=${course.id})}">View course progress</a></section>
 
     <section class="study-plan-stats" aria-label="Study plan overview">
-        <div><span>Saved plans</span><strong th:text="${planCount}">0</strong><small>course schedules</small></div>
-        <div><span>Scheduled study</span><strong th:text="${scheduledMinutes + ' min'}">0 min</strong><small>across saved plans</small></div>
-        <div><span>Course focus</span><strong th:text="${course.name}">Operating Systems</strong><small>your selected course</small></div>
+        <div class="study-plan-stat"><span class="stat-icon" aria-hidden="true">01</span><div><small>Planned workload</small><strong th:text="${pageSummary.scheduledMinutes + ' min'}">0 min</strong><span>latest schedule</span></div></div>
+        <div class="study-plan-stat"><span class="stat-icon teal" aria-hidden="true">02</span><div><small>Scheduled sessions</small><strong th:text="${pageSummary.scheduledSessionCount}">0</strong><span>planned activities</span></div></div>
+        <div class="study-plan-stat mastery-stat"><div><small>Course mastery</small><strong th:text="${pageSummary.hasProgress ? #numbers.formatDecimal(pageSummary.masteryScore, 1, 0) + '%' : 'Not started'}">Not started</strong><span th:text="${pageSummary.hasProgress ? pageSummary.masteryStatus : 'No activity recorded'}">No activity recorded</span></div></div>
+        <div class="study-plan-stat"><span class="stat-icon violet" aria-hidden="true">04</span><div><small>Topics tracked</small><strong th:text="${pageSummary.trackedTopicCount}">0</strong><span>from learning activity</span></div></div>
     </section>
 
     <p class="alert success study-plan-alert" th:if="${planMessage}" th:text="${planMessage}" role="status"></p>
     <p class="alert error study-plan-alert" th:if="${planError}" th:text="${planError}" role="alert"></p>
-
     <div class="study-plan-layout">
         <section class="study-plan-create card" aria-labelledby="create-plan-heading">
             <div class="section-intro"><div class="section-icon" aria-hidden="true">01</div><div><p class="eyebrow">Build your schedule</p><h2 id="create-plan-heading">Generate AI Study Plan</h2><p>Choose a date range, available study time, and strategy. The schedule remains deterministic and course-scoped.</p></div></div>
@@ -30,22 +31,79 @@
                 <button class="button primary generate-plan-button" type="submit">Generate AI Study Plan</button>
             </form>
         </section>
-
         <aside class="study-plan-aside" aria-label="Study plan details">
-            <section class="plan-preview-card card">
-                <div class="card-heading-row"><div><p class="eyebrow">Schedule preview</p><h2>Plan at a glance</h2></div><span class="preview-badge" th:text="${latestPlan == null ? 'Draft' : 'Saved'}">Draft</span></div>
-                <div th:if="${latestPlan != null}" class="preview-content"><div class="preview-row"><span>Study window</span><strong th:text="${latestPlan.startDate + ' to ' + latestPlan.targetDate}">Dates</strong></div><div class="preview-row"><span>Strategy</span><strong th:text="${latestPlan.strategy}">BALANCED</strong></div><div class="preview-row"><span>Planned sessions</span><strong th:text="${latestPlan.items.size()}">0</strong></div><div class="preview-progress" aria-hidden="true"><span style="width: 68%"></span></div><small>Generate a new plan to update this preview.</small></div>
-                <div th:unless="${latestPlan != null}" class="preview-empty"><strong>Your schedule will appear here</strong><span>Set your dates and study time to create a focused plan.</span></div>
-            </section>
-            <section class="plan-guidance card"><p class="eyebrow">Planning note</p><h2>Make your next session count</h2><p>Start with a realistic time budget. You can generate another plan whenever your schedule changes.</p><a class="text-link" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Review learning activity</a></section>
+            <section class="plan-preview-card card"><div class="card-heading-row"><div><p class="eyebrow">Latest schedule</p><h2>Plan at a glance</h2></div><span class="preview-badge" th:text="${latestPlan == null ? 'Draft' : 'Saved'}">Draft</span></div><div th:if="${latestPlan != null}" class="preview-content"><div class="preview-row"><span>Study window</span><strong th:text="${latestPlan.startDate + ' to ' + latestPlan.targetDate}">Dates</strong></div><div class="preview-row"><span>Strategy</span><strong th:text="${latestPlan.strategy}">BALANCED</strong></div><div class="preview-row"><span>Planned sessions</span><strong th:text="${latestPlan.items.size()}">0</strong></div><div class="preview-workload-label"><span>Scheduled workload</span><strong th:text="${pageSummary.scheduledMinutes + ' min'}">0 min</strong></div><div class="preview-progress" aria-hidden="true"><span style="width: 100%"></span></div><small>All generated activities are included in this schedule.</small></div><div th:unless="${latestPlan != null}" class="preview-empty"><strong>Your schedule will appear here</strong><span>Set your dates and study time to create a focused plan.</span></div></section>
+            <section class="next-session-card card" th:if="${pageSummary.nextSession != null}"><p class="eyebrow">Up next</p><h2>Next study session</h2><strong class="next-session-date" th:text="${pageSummary.nextSession.date}">2026-11-02</strong><p th:text="${pageSummary.nextSession.activity}">Review course material</p><span class="duration-badge" th:text="${pageSummary.nextSession.minutes + ' min'}">30 min</span></section>
+            <section class="plan-guidance card" th:unless="${pageSummary.nextSession != null}"><p class="eyebrow">Planning note</p><h2>Make your next session count</h2><p>Start with a realistic time budget. You can generate another plan whenever your schedule changes.</p><a class="text-link" th:href="@{/courses/{id}/flashcards(id=${course.id})}">Review learning activity</a></section>
         </aside>
     </div>
 
+    <section class="workload-section card" th:if="${!#lists.isEmpty(pageSummary.weeklyWorkload)}" aria-labelledby="workload-heading"><div class="section-heading-row"><div><p class="eyebrow">Schedule breakdown</p><h2 id="workload-heading">Planned workload</h2></div><span class="muted">Latest plan by week</span></div><div class="workload-list"><div class="workload-row" th:each="week : ${pageSummary.weeklyWorkload}"><span class="workload-label" th:text="${week.weekLabel}">Week of Nov 2</span><div class="workload-bar" role="img" th:aria-label="${week.scheduledMinutes + ' minutes across ' + week.sessionCount + ' sessions'}"><span th:style="'width:' + ${week.barPercent} + '%'" style="width: 50%"></span></div><strong th:text="${week.scheduledMinutes + ' min'}">30 min</strong><small th:text="${week.sessionCount + ' session(s)'}">1 session</small></div></div></section>
     <section class="saved-plans-section" aria-labelledby="saved-plans-heading">
-        <div class="saved-plans-heading"><div><p class="eyebrow">Your schedules</p><h2 id="saved-plans-heading">Saved plans</h2></div><span class="muted" th:text="${planCount == 0 ? 'Create your first schedule' : planCount + ' saved plan(s)'}">Create your first schedule</span></div>
-        <div th:if="${#lists.isEmpty(plans)}" class="saved-plans-empty"><div class="progress-empty-icon" aria-hidden="true">+</div><h3>No study plans yet</h3><p>Generate your first AI-powered study schedule and track progress toward course mastery.</p><a class="button secondary" href="#create-plan-heading">Create my first plan</a></div>
-        <div th:unless="${#lists.isEmpty(plans)}" class="saved-plan-list"><article class="saved-plan-card" th:each="plan : ${plans}"><div class="saved-plan-top"><div><span class="plan-strategy" th:text="${plan.strategy}">BALANCED</span><h3 th:text="${plan.startDate + ' to ' + plan.targetDate}">2026-11-01 to 2026-11-14</h3></div><strong th:text="${plan.availableMinutes + ' min'}">120 min</strong></div><div class="saved-plan-meta"><span th:text="${plan.items.size() + ' scheduled session(s)'}">4 scheduled sessions</span><span>Course-scoped plan</span></div><div class="saved-plan-track"><span style="width: 68%"></span></div><ul><li th:each="item : ${plan.items}" th:text="${item.date + ' · ' + item.activity + ' (' + item.minutes + ' min)'}">Activity</li></ul></article></div>
+        <div class="saved-plans-heading">
+            <div><p class="eyebrow">Your schedules</p><h2 id="saved-plans-heading">Saved study plans</h2><p class="muted">A clear view of what to study next and how much you have completed.</p></div>
+            <span class="saved-plan-count" th:text="${planCount == 0 ? 'No saved plans' : planCount + (planCount == 1 ? ' plan' : ' plans')}">1 plan</span>
+        </div>
+        <div th:if="${#lists.isEmpty(planCards)}" class="saved-plans-empty">
+            <div class="saved-empty-mark" aria-hidden="true">SF</div><p class="eyebrow">Your next step starts here</p><h3>No study plans yet</h3>
+            <p>Create a course-scoped schedule, then track each study session as you complete it.</p><a class="button primary" href="#create-plan-heading">Create my first plan</a>
+        </div>
+        <div th:unless="${#lists.isEmpty(planCards)}" class="saved-plan-list">
+            <article class="saved-plan-card" th:each="planCard : ${planCards}" th:with="plan=${planCard.plan}">
+                <header class="saved-plan-hero">
+                    <div class="saved-plan-title">
+                        <div class="saved-plan-kicker"><span class="plan-strategy" th:text="${#strings.replace(plan.strategy, '_', ' ')}">BALANCED</span><span class="saved-course-context" th:text="${course.courseCode + ' · ' + course.name}">EECS3221 · Operating Systems</span></div>
+                        <h3 th:text="${plan.startDate + ' — ' + plan.targetDate}">Study plan dates</h3>
+                        <p>Study schedule for <strong th:text="${course.name}">Operating Systems</strong></p>
+                    </div>
+                    <div class="saved-plan-hero-actions"><a class="button primary" th:href="${planCard.primaryActionUrl}" th:text="${planCard.primaryActionLabel}">Continue studying</a><a class="saved-plan-secondary-action" href="#create-plan-heading">Generate another plan</a></div>
+                </header>
+                <div class="saved-plan-metrics" aria-label="Study plan summary">
+                    <div><span>Time commitment</span><strong th:text="${plan.availableMinutes + ' min'}">120 min</strong></div>
+                    <div><span>Sessions</span><strong th:text="${planCard.completedSessions + ' / ' + planCard.sessions.size() + ' done'}">0 / 4 done</strong></div>
+                    <div><span>Time remaining</span><strong th:text="${planCard.remainingMinutes + ' min'}">120 min</strong></div>
+                    <div><span>Strategy</span><strong class="metric-strategy" th:text="${#strings.replace(plan.strategy, '_', ' ')}">Balanced</strong></div>
+                </div>
+                <div class="saved-plan-progress">
+                    <div class="saved-plan-progress-heading"><span>Plan progress</span><strong th:text="${planCard.progressPercent + '%'}">0%</strong></div>
+                    <div class="saved-plan-progress-track" role="progressbar" aria-label="Completed study sessions" aria-valuemin="0" th:aria-valuemax="${planCard.sessions.size()}" th:aria-valuenow="${planCard.completedSessions}"><span th:style="|width: ${planCard.progressPercent}%|" style="width: 0%"></span></div>
+                    <small th:text="${planCard.completedMinutes + ' minutes recorded across ' + planCard.completedSessions + ' completed sessions'}">0 minutes recorded</small>
+                </div>
+                <div class="saved-plan-workspace">
+                    <section class="saved-timeline-column" th:id="'plan-timeline-' + ${plan.id}" aria-label="Study session timeline">
+                        <div class="saved-subsection-heading"><div><p class="eyebrow">Your schedule</p><h4>Study sessions</h4></div><span th:text="${planCard.sessions.size() + ' sessions'}">4 sessions</span></div>
+                        <ol class="saved-session-timeline">
+                            <li th:each="studySession : ${planCard.sessions}" th:class="${'saved-session is-' + studySession.kind}">
+                                <span class="session-timeline-node" aria-hidden="true"><span th:text="${studySession.kind == 'completed' ? '✓' : studySession.kind == 'practice' ? 'P' : studySession.kind == 'priority' ? '!' : 'R'}">R</span></span>
+                                <article class="saved-session-card">
+                                    <div class="saved-session-topline"><time th:text="${studySession.dayLabel}">Nov 2</time><span class="session-status" th:text="${studySession.status}">Scheduled</span></div>
+                                    <h5 th:text="${studySession.title}">Review CPU Scheduling</h5>
+                                    <p class="saved-session-topic" th:text="${studySession.topic}">CPU Scheduling notes</p>
+                                    <div class="saved-session-details"><span class="session-priority" th:text="${studySession.priority}">Recommended</span><span class="session-duration" th:text="${studySession.item.completed && studySession.item.actualMinutes > 0 ? studySession.item.actualMinutes + ' min spent' : studySession.item.minutes + ' min planned'}">30 min planned</span></div>
+                                    <p class="saved-session-reason" th:text="${studySession.reason}">Recommended from your recent study activity.</p>
+                                    <div class="saved-session-actions"><a class="button session-start-button" th:if="${!studySession.item.completed}" th:href="${studySession.actionUrl}" th:text="${studySession.actionLabel}">Start session</a><span class="session-complete-label" th:if="${studySession.item.completed}">Session completed</span>
+                                        <details class="plan-item-edit"><summary>Edit session</summary><form method="post" th:action="@{/courses/{courseId}/study-plan/{planId}/items/{itemId}(courseId=${course.id},planId=${plan.id},itemId=${studySession.item.id})}"><label>Date<input type="date" name="date" th:value="${studySession.item.date}" required></label><label>Activity<input type="text" name="activity" th:value="${studySession.item.activity}" maxlength="500" required></label><label>Planned minutes<input type="number" name="minutes" min="1" th:value="${studySession.item.minutes}" required></label><label>Minutes spent<input type="number" name="actualMinutes" min="0" th:value="${studySession.item.actualMinutes}" required></label><label class="completion-check"><input type="checkbox" name="completed" value="true" th:checked="${studySession.item.completed}"> Mark this session complete</label><button class="button secondary" type="submit">Save session</button></form></details>
+                                    </div>
+                                </article>
+                            </li>
+                        </ol>
+                    </section>
+                    <aside class="saved-plan-insights" aria-label="Study plan insights">
+                        <div class="plan-insights-header"><span class="insights-spark" aria-hidden="true">✦</span><div><p class="eyebrow">Study insights</p><h4>Built around your course</h4></div></div>
+                        <p class="plan-insights-caption">Recommendations are based on saved course activity and ready materials.</p>
+                        <div class="plan-insight-item" th:if="${pageSummary.hasProgress}"><span>Current course mastery</span><strong th:text="${#numbers.formatDecimal(pageSummary.masteryScore, 1, 0) + '% · ' + #strings.toLowerCase(pageSummary.masteryStatus)}">46% · developing</strong></div>
+                        <div class="plan-insight-item" th:unless="${pageSummary.hasProgress}"><span>Course mastery</span><strong>Not started</strong><small>Complete a quiz or review flashcards to begin tracking.</small></div>
+                        <div class="plan-focus-card" th:if="${!#lists.isEmpty(pageSummary.reviewItems)}">
+                            <div th:with="focus=${pageSummary.reviewItems[0]}"><span class="focus-label">Recommended focus</span><strong th:text="${focus.title}">CPU Scheduling</strong><p th:text="${focus.reason}">This topic needs practice.</p><a class="text-link" th:href="${focus.actionUrl}" th:text="${focus.actionLabel}">Review now</a></div>
+                        </div>
+                        <div class="plan-focus-card plan-focus-empty" th:if="${#lists.isEmpty(pageSummary.reviewItems)}"><span class="focus-label">Your schedule</span><strong th:text="${planCard.remainingMinutes == 0 ? 'Plan complete' : 'Keep your planned rhythm'}">Keep your planned rhythm</strong><p>Mastery changes are based on your recorded learning activity; no forecast is shown.</p></div>
+                        <div class="plan-insight-footer"><span>Target date</span><strong th:text="${plan.targetDate}">2026-11-18</strong><a th:href="@{/courses/{id}/progress(id=${course.id})}">View course progress <span aria-hidden="true">→</span></a></div>
+                    </aside>
+                </div>
+            </article>
+        </div>
     </section>
 </main>
+<script th:src="@{/js/study-plan-alert.js(v=1)}" defer></script>
 </body>
 </html>
