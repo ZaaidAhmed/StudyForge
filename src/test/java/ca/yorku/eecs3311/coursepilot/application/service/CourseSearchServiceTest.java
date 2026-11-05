@@ -44,6 +44,20 @@ class CourseSearchServiceTest {
     }
 
     @Test
+    void naturalLanguageQuestionRetrievesTheConceptInsteadOfMatchingMostlyStopWords() {
+        when(courses.existsById(1L)).thenReturn(true);
+        DocumentChunk matching = chunk(1L, 10L, "Threads.pdf", 1,
+                "A thread is an execution unit with its own program counter and stack in an operating system.");
+        when(chunks.findSearchableByCourseId(1L, ProcessingStatus.READY)).thenReturn(List.of(matching));
+
+        var results = service.search(1L, "What is a thread in an operating system?", 5);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().matchedTerms()).containsExactly("thread", "operating", "system");
+        assertThat(results.getFirst().snippet()).contains("thread", "program counter");
+    }
+
+    @Test
     void appliesTopKAndStableDocumentThenChunkOrdering() {
         when(courses.existsById(1L)).thenReturn(true);
         var first = chunk(1L, 1L, "notes.txt", 2, "strategy pattern");

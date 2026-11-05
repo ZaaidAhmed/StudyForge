@@ -39,6 +39,14 @@ class LexicalRetrievalScorerTest {
         assertThat(repeated.score() - normal.score()).isLessThan(1.0);
     }
 
+    @Test
+    void naturalLanguageQueriesIgnoreCommonWordsAndNormalizePlurals() {
+        var query = normalizer.normalize("What is a thread in an operating system?");
+        assertThat(query.terms()).containsExactly("thread", "operating", "system");
+        assertThat(normalizer.normalize("How do threads differ from processes?").terms())
+                .containsExactly("thread", "differ", "process");
+    }
+
     private DocumentChunk chunk(String filename, String content, int index) {
         Course course = new Course("EECS3311", "Software Design", null, null);
         CourseDocument document = new CourseDocument(course, filename, "stored.pdf", "text/plain", "txt", "hash" + index, content.length(), 1, null);

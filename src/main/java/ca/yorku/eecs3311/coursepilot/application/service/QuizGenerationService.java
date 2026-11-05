@@ -42,6 +42,12 @@ public class QuizGenerationService {
 
     @Transactional
     public QuizGenerationResult generate(Long courseId, Long documentId, Integer count, Set<String> requestedTypes) {
+        return generate(courseId, documentId, count, requestedTypes, CreationOrigin.USER);
+    }
+
+    @Transactional
+    public QuizGenerationResult generate(Long courseId, Long documentId, Integer count, Set<String> requestedTypes,
+                                         CreationOrigin origin) {
         int requestedCount = count == null ? 10 : count;
         if (requestedCount < 1 || requestedCount > maxCount) throw new IllegalArgumentException("Quiz count must be between 1 and " + maxCount + ".");
         Set<String> types = normalizeTypes(requestedTypes);
@@ -60,7 +66,12 @@ public class QuizGenerationService {
         String conceptContext = formatConcepts(concepts);
         List<String> allowedSourceIds = concepts.stream().flatMap(c -> c.sourceIds().stream()).distinct().toList();
         Quiz quiz = new Quiz(chunks.getFirst().getDocument().getCourse(), doc.originalFilename() + " quiz");
-        Set<String> seen = new LinkedHashSet<>(); ObjectMapper mapper = new ObjectMapper();
+        quiz.setCreationOrigin(origin);
+        List<QuizQuestion> knownQuestions = quizzes.findByCourseIdAndSourceDocumentId(courseId, documentId)
+                .stream().flatMap(savedQuiz -> savedQuiz.getQuestions().stream()).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        Set<String> seen = knownQuestions.stream().map(question -> normalize(question.getPrompt()))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        ObjectMapper mapper = new ObjectMapper();
         Stats stats = new Stats(requestedCount, concepts.size(), availability.provider(), availability.model()); int recoveryStage = 0; String failureHint = "the first generation request";
 
         while (quiz.getQuestions().size() < requestedCount && stats.providerCallCount < MAX_PROVIDER_CALLS && stats.generatedCandidateCount < requestedCount * 8) {
@@ -71,16 +82,19 @@ public class QuizGenerationService {
             for (QuizGenerationLlmResponse.GeneratedQuestion candidate : batch.questions) {
                 if (quiz.getQuestions().size() >= requestedCount) break;
                 String key = candidate == null || candidate.prompt() == null ? "" : normalize(candidate.prompt());
-                if (key.isBlank() || seen.contains(key)) { reject(stats, "DUPLICATE_QUESTION", candidate, "blank or repeated normalized prompt"); continue; }
+                if (key.isBlank() || seen.contains(key) || duplicatesExistingObjective(candidate, knownQuestions)) {
+                    reject(stats, "DUPLICATE_QUESTION", candidate, "question repeats a learning objective in an existing or current quiz");
+                    continue;
+                }
                 ValidationResult validation = toQuestion(candidate, quiz, chunks, sourceMap, types, mapper);
                 if (validation.question() == null) { reject(stats, validation.reason(), candidate, validation.detail()); continue; }
-                quiz.addQuestion(validation.question()); seen.add(key); stats.validatedCount++;
+                quiz.addQuestion(validation.question()); knownQuestions.add(validation.question()); seen.add(key); stats.validatedCount++;
             }
             if (quiz.getQuestions().size() == before) { failureHint = "the previous candidates were rejected; create replacement questions"; recoveryStage = Math.min(4, recoveryStage + 1); }
         }
 
         if (quiz.getQuestions().size() < requestedCount) {
-            int before = quiz.getQuestions().size(); addFallbackQuestions(quiz, concepts, chunks, sourceMap, types, seen, requestedCount, mapper, stats); stats.backfillAttempts++;
+            int before = quiz.getQuestions().size(); addFallbackQuestions(quiz, concepts, chunks, sourceMap, types, seen, knownQuestions, requestedCount, mapper, stats); stats.backfillAttempts++;
             log.info("Quiz fallback applied: before={}, after={}, requested={}", before, quiz.getQuestions().size(), requestedCount);
         }
         int saved = quiz.getQuestions().size(); stats.savedCount = saved; stats.returnedCount = saved;
@@ -95,8 +109,8 @@ public class QuizGenerationService {
                 case "AI_PROVIDER_ERROR", "AI_TIMEOUT" -> "AI is unavailable. Check AI status or switch providers.";
                 default -> "Only " + saved + " distinct quiz-worthy questions could be created from " + concepts.size() + " validated concepts.";
             };
-            throw new InsightGenerationException("The AI generated " + saved + " valid questions out of " + requestedCount + ". "
-                    + recovery + " " + summary + ".");
+            throw new InsightGenerationException("The AI generated " + saved + " new, distinct questions out of " + requestedCount + ". "
+                    + recovery + " Existing saved quizzes for this material were checked to prevent duplicate questions. " + summary + ".");
         }
         quizzes.save(quiz); log.info("Quiz generation complete: {}", stats.summary());
         return new QuizGenerationResult(requestedCount, saved, QuizResponseDto.from(quiz), stats.generatedCandidateCount, stats.validatedCount, stats.rejectedCount, stats.attemptCount, stats.providerCallCount, stats.responseCount, stats.parsedBatchCount, stats.retryCount, stats.failureCategory, stats.rejectionReasons, "Created " + saved + " of " + requestedCount + " questions.");
@@ -127,15 +141,17 @@ public class QuizGenerationService {
         log.info("Quiz response: provider={}, model={}, attempt={}, responseLength={}, startsWithJson={}, hasQuestionsField={}, hasQuizQuestionsField={}, hasItemsField={}, parseSuccess={}, candidateCount={}, failureCategory={}", stats.provider, response == null ? stats.model : response.model(), stats.attemptCount, raw.length(), raw.trim().startsWith("{"), hasQuestions, hasQuizQuestions, hasItems, parsed, candidateCount, category);
     }
 
-    private void addFallbackQuestions(Quiz quiz, List<QuizConcept> concepts, List<DocumentChunk> chunks, Map<String, GroundedSource> sourceMap, Set<String> types, Set<String> seen, int target, ObjectMapper mapper, Stats stats) {
+    private void addFallbackQuestions(Quiz quiz, List<QuizConcept> concepts, List<DocumentChunk> chunks, Map<String, GroundedSource> sourceMap, Set<String> types, Set<String> seen, List<QuizQuestion> knownQuestions, int target, ObjectMapper mapper, Stats stats) {
         for (QuizConcept concept : concepts) {
             if (quiz.getQuestions().size() >= target) return;
             List<QuizQuestionType> angles = new ArrayList<>(); if (types.contains("MULTIPLE_CHOICE")) angles.add(QuizQuestionType.MULTIPLE_CHOICE); if (types.contains("TRUE_FALSE")) angles.add(QuizQuestionType.TRUE_FALSE); if (types.contains("SHORT_ANSWER")) angles.add(QuizQuestionType.SHORT_ANSWER);
             for (QuizQuestionType type : angles) {
-                if (quiz.getQuestions().size() >= target) return; String prompt = fallbackPrompt(concept, type); String key = normalize(prompt); if (seen.contains(key)) continue;
-                var candidate = fallbackCandidate(concept, type, concepts); ValidationResult validation = toQuestion(candidate, quiz, chunks, sourceMap, types, mapper);
+                if (quiz.getQuestions().size() >= target) return; String prompt = fallbackPrompt(concept, type); String key = normalize(prompt);
+                var candidate = fallbackCandidate(concept, type, concepts);
+                if (seen.contains(key) || duplicatesExistingObjective(candidate, knownQuestions)) continue;
+                ValidationResult validation = toQuestion(candidate, quiz, chunks, sourceMap, types, mapper);
                 if (validation.question() == null) { reject(stats, validation.reason(), candidate, validation.detail()); continue; }
-                quiz.addQuestion(validation.question()); seen.add(key); stats.validatedCount++; stats.generatedCandidateCount++;
+                quiz.addQuestion(validation.question()); knownQuestions.add(validation.question()); seen.add(key); stats.validatedCount++; stats.generatedCandidateCount++;
             }
         }
     }
@@ -227,6 +243,49 @@ public class QuizGenerationService {
     private void reject(Stats stats, String reason, QuizGenerationLlmResponse.GeneratedQuestion question, String detail) { stats.rejectedCount++; stats.rejectionReasons.merge(reason == null || reason.isBlank() ? "MALFORMED" : reason, 1, Integer::sum); String prompt = question == null ? "<missing>" : Objects.toString(question.prompt(), "<missing>"); log.info("Quiz candidate rejected: attempt={}, reason={}, detail={}, promptLength={}", stats.attemptCount, reason, detail, prompt.length()); }
     private String normalizeAnswer(String answer, List<String> options) { if (answer == null) return null; String value = answer.trim(); if (value.length() == 1 && value.charAt(0) >= 'A' && value.charAt(0) <= 'Z') { int index = value.charAt(0) - 'A'; if (index < options.size()) return options.get(index); } return value; }
     private String normalize(String value) { return Normalizer.normalize(value, Normalizer.Form.NFKC).trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT); }
+    private boolean duplicatesExistingObjective(QuizGenerationLlmResponse.GeneratedQuestion candidate, List<QuizQuestion> known) {
+        if (candidate == null || candidate.prompt() == null) return false;
+        String prompt = normalize(candidate.prompt());
+        String answer = normalize(Objects.toString(candidate.correctAnswer(), candidate.referenceAnswer()));
+        Set<String> objective = objectiveTokens(prompt);
+        for (QuizQuestion existing : known) {
+            String existingPrompt = normalize(existing.getPrompt());
+            if (prompt.equals(existingPrompt)) return true;
+            Set<String> existingObjective = objectiveTokens(existingPrompt);
+            if (!objective.isEmpty() && !existingObjective.isEmpty() && overlapCoefficient(objective, existingObjective) >= 0.80) return true;
+            String existingAnswer = normalize(Objects.toString(existing.getCorrectAnswer(), existing.getReferenceAnswer()));
+            if (answer.length() >= 24 && answer.equals(existingAnswer)) return true;
+        }
+        return false;
+    }
+
+    private Set<String> objectiveTokens(String prompt) {
+        Set<String> ignored = Set.of("what", "which", "who", "when", "where", "why", "how", "does", "do", "is", "are", "was", "were", "the", "a", "an", "of", "in", "on", "for", "to", "from", "with", "by", "about", "explain", "define", "describe", "identify", "state", "main", "primary", "key", "following", "best", "correct", "term", "mean", "meant", "refer", "refers", "called", "known");
+        Set<String> tokens = Arrays.stream(prompt.split("[^a-z0-9]+"))
+                .filter(token -> token.length() > 2 && !ignored.contains(token))
+                .map(this::singularize)
+                .collect(java.util.stream.Collectors.toSet());
+        String value = " " + prompt + " ";
+        if (value.matches("(?s).*\\b(what is|define|definition|meaning|refers to)\\b.*")) tokens.add("angle_definition");
+        else if (value.matches("(?s).*\\b(compare|differ|difference|versus|vs)\\b.*")) tokens.add("angle_comparison");
+        else if (value.matches("(?s).*\\b(why|benefit|advantage|tradeoff|purpose|importance)\\b.*")) tokens.add("angle_reasoning");
+        else if (value.matches("(?s).*\\b(scenario|example|apply|application|use|used|when)\\b.*")) tokens.add("angle_application");
+        return tokens;
+    }
+
+    private String singularize(String token) {
+        if (token.endsWith("ies") && token.length() > 4) return token.substring(0, token.length() - 3) + "y";
+        if (token.endsWith("es") && token.length() > 5) return token.substring(0, token.length() - 2);
+        if (token.endsWith("s") && token.length() > 4 && !token.endsWith("ss")) return token.substring(0, token.length() - 1);
+        return token;
+    }
+
+    private double overlapCoefficient(Set<String> first, Set<String> second) {
+        Set<String> smaller = first.size() <= second.size() ? first : second;
+        Set<String> larger = smaller == first ? second : first;
+        long intersection = smaller.stream().filter(larger::contains).count();
+        return (double) intersection / smaller.size();
+    }
     private String normalizeType(String value) { return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_'); }
     private boolean isSelfContainedAssessmentQuestion(String prompt) { if (prompt == null) return false; String normalized = normalize(prompt); if (normalized.length() < 20 || normalized.length() > 500) return false; return List.of("uploaded material", "this passage", "the passage", "provided pdf", "the material states", "supported by the material", "what does the material", "according to the document", "according to this document").stream().noneMatch(normalized::contains); }
     private boolean isForbiddenOption(String option) { String normalized = normalize(option); return normalized.contains("all of the above") || normalized.contains("none of the above") || normalized.contains("uploaded material") || normalized.contains("provided pdf"); }

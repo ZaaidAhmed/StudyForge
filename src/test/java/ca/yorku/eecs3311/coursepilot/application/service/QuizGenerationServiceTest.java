@@ -111,7 +111,7 @@ class QuizGenerationServiceTest {
 
         assertThatThrownBy(() -> service.generate(1L, 2L, 2, Set.of("MULTIPLE_CHOICE")))
                 .isInstanceOf(InsightGenerationException.class)
-                .hasMessageContaining("generated 1 valid questions out of 2");
+                .hasMessageContaining("generated 1 new, distinct questions out of 2");
         verify(quizzes, never()).save(any(Quiz.class));
     }
 }

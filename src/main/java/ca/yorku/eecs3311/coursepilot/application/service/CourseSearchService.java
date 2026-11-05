@@ -86,11 +86,12 @@ public class CourseSearchService {
 
     private String snippet(String content, List<String> matchedTerms) {
         if (content.length() <= 360) return content;
-        int start = matchedTerms.stream().mapToInt(term -> content.toLowerCase(java.util.Locale.ROOT).indexOf(term)).filter(value -> value >= 0).min().orElse(0);
+        int start = matchedTerms.stream().mapToInt(term -> content.toLowerCase(java.util.Locale.ROOT).indexOf(term))
+                .filter(value -> value >= 0).findFirst().orElse(0);
         int from = Math.max(0, start - 100);
         int to = Math.min(content.length(), from + 360);
         String result = content.substring(from, to).trim();
-        return (from > 0 ? "…" : "") + result + (to < content.length() ? "…" : "");
+        return (from > 0 ? "..." : "") + result + (to < content.length() ? "..." : "");
     }
 
     private long documentId(ScoredChunk scored) {

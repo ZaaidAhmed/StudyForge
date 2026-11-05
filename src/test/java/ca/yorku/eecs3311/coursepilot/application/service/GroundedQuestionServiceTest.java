@@ -63,6 +63,24 @@ class GroundedQuestionServiceTest {
     }
 
     @Test
+    void focusesRetrievalOnTheConceptInsteadOfRepeatedCourseHeaderText() {
+        String question = "What is a thread in an operating system?";
+        when(searchService.search(1L, "What is a thread in an?", 5)).thenReturn(List.of(
+                result(10L, 100L, "Threads.pdf", 1, 3, 3, "A thread has a program counter, registers, and stack.")));
+        when(llmClient.generate(any())).thenReturn(new LlmResponse(
+                "{\"answer\":\"A thread is an execution unit with its own program counter, registers, and stack.\",\"sourceIds\":[\"S1\"],\"insufficientContext\":false}",
+                "test", 4));
+
+        var answer = service.ask(1L, question);
+
+        assertThat(answer.grounded()).isTrue();
+        verify(searchService).search(1L, "What is a thread in an?", 5);
+        var request = org.mockito.ArgumentCaptor.forClass(ca.yorku.eecs3311.coursepilot.application.ai.LlmRequest.class);
+        verify(llmClient).generate(request.capture());
+        assertThat(request.getValue().userPrompt()).contains(question);
+    }
+
+    @Test
     void rejectsInvalidModelSourceReferences() {
         SearchResult source = result(10L, 100L, "Lecture.pdf", 1, 3, 3, "Valid course evidence.");
         when(searchService.search(1L, "question", 5)).thenReturn(List.of(source));

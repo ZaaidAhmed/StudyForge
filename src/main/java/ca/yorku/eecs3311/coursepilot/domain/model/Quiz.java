@@ -4,7 +4,10 @@ import jakarta.persistence.*; import java.time.Instant; import java.util.ArrayLi
  @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
  @ManyToOne(fetch=FetchType.LAZY,optional=false) @JoinColumn(name="course_id",nullable=false) private Course course;
  @Column(nullable=false,length=255) private String title; @Column(nullable=false) private Instant createdAt;
+ @Enumerated(EnumType.STRING) @Column(name="creation_origin",length=16) private CreationOrigin creationOrigin = CreationOrigin.USER;
  @OneToMany(mappedBy="quiz",cascade=CascadeType.ALL,orphanRemoval=true) @OrderBy("id ASC") private List<QuizQuestion> questions=new ArrayList<>();
  protected Quiz(){} public Quiz(Course course,String title){this.course=course;this.title=title;} @PrePersist void onCreate(){createdAt=Instant.now();}
  public Long getId(){return id;} public Course getCourse(){return course;} public String getTitle(){return title;} public Instant getCreatedAt(){return createdAt;} public List<QuizQuestion> getQuestions(){return questions;} public void addQuestion(QuizQuestion q){questions.add(q);}
+ public CreationOrigin getCreationOrigin(){return creationOrigin == null ? CreationOrigin.USER : creationOrigin;}
+ public void setCreationOrigin(CreationOrigin creationOrigin){this.creationOrigin=creationOrigin == null ? CreationOrigin.USER : creationOrigin;}
 }

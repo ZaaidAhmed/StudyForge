@@ -61,6 +61,13 @@ public class FlashcardGenerationService {
 
     @Transactional
     public FlashcardGenerationResult generate(Long courseId, Long documentId, Integer requestedCount) {
+        return generate(courseId, documentId, requestedCount,
+                ca.yorku.eecs3311.coursepilot.domain.model.CreationOrigin.USER);
+    }
+
+    @Transactional
+    public FlashcardGenerationResult generate(Long courseId, Long documentId, Integer requestedCount,
+                                               ca.yorku.eecs3311.coursepilot.domain.model.CreationOrigin origin) {
         int count = requestedCount == null ? defaultCount : requestedCount;
         if (count < 1 || count > maxCount) throw new IllegalArgumentException("Flashcard count must be between 1 and " + maxCount + ".");
         var document = materialService.getDocument(courseId, documentId);
@@ -107,7 +114,7 @@ public class FlashcardGenerationService {
             }
             log.info("Flashcard trace: attempt={}, requestedBatch={}, aiGeneratedBatch={}", attempt + 1, remaining, generated.flashcards().size());
             int before = saved.size();
-            List<Flashcard> batch = persistValidCards(remaining, generated, sourceMap, chunks, sessionKnown, consumedAngles, stats);
+            List<Flashcard> batch = persistValidCards(remaining, generated, sourceMap, chunks, sessionKnown, consumedAngles, stats, origin);
             saved.addAll(batch);
             batch.forEach(card -> sessionKnown.add(signature(card.getQuestion(), card.getAnswer(), null, null)));
             generated.flashcards().forEach(card -> {
@@ -121,7 +128,7 @@ public class FlashcardGenerationService {
         }
         if (saved.size() < count && !concepts.isEmpty()) {
             List<Flashcard> fallback = createFallbackCards(count - saved.size(),
-                    learningAngles, chunks, sessionKnown, consumedAngles, stats);
+                    learningAngles, chunks, sessionKnown, consumedAngles, stats, origin);
             saved.addAll(fallback);
         }
         if (saved.isEmpty()) {
@@ -340,7 +347,8 @@ public class FlashcardGenerationService {
     private List<Flashcard> persistValidCards(int count, FlashcardGenerationLlmResponse response,
                                                Map<String, GroundedSource> sourceMap, List<DocumentChunk> chunks,
                                                List<CardSignature> sessionKnown, Set<String> consumedAngles,
-                                               GenerationStats stats) {
+                                               GenerationStats stats,
+                                               ca.yorku.eecs3311.coursepilot.domain.model.CreationOrigin origin) {
         List<CardSignature> knownCards = repository
                 .findByCourseIdAndSourceDocumentIdWithSources(chunks.get(0).getDocument().getCourse().getId(),
                         chunks.get(0).getDocument().getId())
@@ -378,7 +386,9 @@ public class FlashcardGenerationService {
                 stats.deduplicated++;
                 continue;
             }
-            Flashcard card = repository.save(new Flashcard(chunks.get(0).getDocument().getCourse(), question, answer));
+            Flashcard card = new Flashcard(chunks.get(0).getDocument().getCourse(), question, answer);
+            card.setCreationOrigin(origin);
+            repository.save(card);
             for (GroundedSource source : sources) {
                 DocumentChunk chunk = chunks.stream().filter(value -> value.getId().equals(source.chunkId())).findFirst().orElse(null);
                 if (chunk != null) card.addSource(new FlashcardSource(card, chunk.getDocument(), chunk.getId(), chunk.getChunkIndex(), chunk.getStartPage(), chunk.getEndPage()));
@@ -393,7 +403,8 @@ public class FlashcardGenerationService {
 
     private List<Flashcard> createFallbackCards(int target, List<LearningAngle> angles, List<DocumentChunk> chunks,
                                                 List<CardSignature> sessionKnown, Set<String> consumedAngles,
-                                                GenerationStats stats) {
+                                                GenerationStats stats,
+                                                ca.yorku.eecs3311.coursepilot.domain.model.CreationOrigin origin) {
         List<Flashcard> fallback = new ArrayList<>();
         for (LearningAngle angle : angles) {
             if (fallback.size() >= target) break;
@@ -410,7 +421,9 @@ public class FlashcardGenerationService {
                 continue;
             }
             stats.validated++;
-            Flashcard card = repository.save(new Flashcard(chunks.get(0).getDocument().getCourse(), candidateText.question(), candidateText.answer()));
+            Flashcard card = new Flashcard(chunks.get(0).getDocument().getCourse(), candidateText.question(), candidateText.answer());
+            card.setCreationOrigin(origin);
+            repository.save(card);
             for (GroundedSource source : angle.sources()) {
                     chunks.stream().filter(value -> value.getId().equals(source.chunkId())).findFirst().ifPresent(chunk ->
                             card.addSource(new FlashcardSource(card, chunk.getDocument(), chunk.getId(), chunk.getChunkIndex(), chunk.getStartPage(), chunk.getEndPage())));

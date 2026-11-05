@@ -47,12 +47,23 @@ public class GroundedQuestionService {
 
     public GroundedAnswer ask(Long courseId, String question) {
         String normalizedQuestion = validateQuestion(question);
-        return answerFromResults(normalizedQuestion, searchService.search(courseId, normalizedQuestion, retrievalTopK));
+        return answerFromResults(normalizedQuestion, searchService.search(courseId, retrievalQuery(normalizedQuestion), retrievalTopK));
     }
 
     public GroundedAnswer askDocument(Long courseId, Long documentId, String question) {
         String normalizedQuestion = validateQuestion(question);
-        return answerFromResults(normalizedQuestion, searchService.searchDocument(courseId, documentId, normalizedQuestion, retrievalTopK));
+        return answerFromResults(normalizedQuestion, searchService.searchDocument(courseId, documentId,
+                retrievalQuery(normalizedQuestion), retrievalTopK));
+    }
+
+    private String retrievalQuery(String question) {
+        // PDF headers repeat the course subject (for example, "Operating System Concepts")
+        // on many pages. Those generic words can outrank the actual concept in lexical search.
+        String focused = question.replaceAll("(?i)\\boperating\\s+systems?\\b", " ")
+                .replaceAll("(?i)\\b(course\\s+)?materials?\\b", " ")
+                .replaceAll("\\s+([?.!,])", "$1")
+                .replaceAll("\\s+", " ").trim();
+        return focused.isBlank() ? question : focused;
     }
 
     private GroundedAnswer answerFromResults(String normalizedQuestion, List<SearchResult> results) {
@@ -77,7 +88,11 @@ public class GroundedQuestionService {
             throw new GroundedQuestionException("The AI response did not contain valid supporting course sources.");
         }
         List<GroundedSource> sources = generated.sourceIds().stream().map(sourceMap::get).distinct().toList();
-        return new GroundedAnswer(normalizedQuestion, generated.answer(), sources, true, false);
+        List<String> concepts = generated.keyConcepts().stream().map(String::trim)
+                .filter(value -> !value.isBlank() && value.length() <= 60)
+                .filter(value -> !value.matches("(?i).*(pdf|page \\d|source ?s?\\d+|document|citation).*"))
+                .distinct().limit(5).toList();
+        return new GroundedAnswer(normalizedQuestion, generated.answer(), sources, true, false, concepts);
     }
 
     private String validateQuestion(String question) {
