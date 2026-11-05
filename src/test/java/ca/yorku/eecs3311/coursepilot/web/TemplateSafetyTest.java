@@ -91,4 +91,33 @@ class TemplateSafetyTest {
         assertThat(css).contains(".studio-tool-panel[hidden]{display:none!important}",
                 ".studio-tutor-pane>.studio-tool-panel:not([hidden]) .studio-chat-form");
     }
+
+    @Test
+    void courseAssistantUsesChatFirstLayoutAndAccessibleIcons() throws Exception {
+        String agent = Files.readString(Path.of("src/main/resources/templates/agent/index.html"));
+        String css = Files.readString(Path.of("src/main/resources/static/css/agent-workspace.css"));
+        assertThat(agent).contains("StudyForge assistant", "Course conversation", "agent-onboarding",
+                "agent-suggestions", "agent-rerun-form", "agent-material-scope", "agent-mini-metrics",
+                "<symbol id=\"agent-book\"", "<symbol id=\"agent-quiz\"", "<symbol id=\"agent-send\"",
+                "th:text=\"${message.prompt}\"", "th:text=\"${message.result}\"", "aria-live=\"polite\"")
+                .doesNotContain("agent-hero-art", "agent-quick-actions", "agent-snapshot", "Recent AI tasks",
+                        "Study streak", "th:utext", "aria-hidden=\"true\">DOC", "aria-hidden=\"true\">CARD",
+                        "aria-hidden=\"true\">PLAN", "aria-hidden=\"true\">PROG");
+        assertThat(css).contains("grid-template-columns:minmax(0,1fr) 310px", "@media(max-width:850px)",
+                "@media(max-width:560px)", "prefers-reduced-motion", ":focus-visible");
+    }
+
+    @Test
+    void learningHistoryUsesEscapedTimelineAndClearEventMetadata() throws Exception {
+        String history = Files.readString(Path.of("src/main/resources/templates/history/index.html"));
+        String css = Files.readString(Path.of("src/main/resources/static/css/history.css"));
+        assertThat(history).contains("Learning history", "history-timeline", "historySections", "day.dateLabel()",
+                "event.displayType()", "event.displayTimestamp()", "event.primaryDetail()", "event.secondaryDetail()",
+                "event.actionLabel()", "event.actionUrl()", "event.detail",
+                "flashcardReviewCount", "quizAttemptCount", "studyPlanCount", "No matching activity", "No learning history yet",
+                "@{/courses/{id}(id=${course.id})}", "@{/courses/{id}/practice(id=${course.id})}")
+                .doesNotContain("th:utext", "event.type}", "Â·", "â€œ");
+        assertThat(css).contains(".history-timeline-list::before", ".history-summary", ".history-filter-empty", ".history-empty", ".history-event-action", "@media (max-width: 620px)",
+                "prefers-reduced-motion", ".history-event--flashcard", ".history-event--quiz", ".history-event--plan");
+    }
 }

@@ -1,21 +1,135 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Agent assistance')}"></head>
+<head th:replace="~{fragments/layout :: head('Study assistant')}"></head>
 <body>
 <header th:replace="~{fragments/layout :: topbar}"></header>
 <aside th:replace="~{fragments/layout :: sidebar}"></aside>
-<main class="content learning-content">
+<main id="main-content" class="content learning-content agent-page">
     <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
-    <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
-    <h1>CoursePilot agent</h1>
-    <p class="lede">Ask for multi-step learning help. The agent uses bounded, course-scoped tools and shows observable results.</p>
-    <form class="card" data-progress-operation="agent" method="post" th:action="@{/courses/{id}/agent(id=${course.id})}">
-        <label for="request">What would you like to do?</label>
-        <textarea id="request" name="request" maxlength="1000" required th:text="${request}" placeholder="Help me study what I am weakest at"></textarea>
-        <button class="button primary" type="submit">Run study task</button>
-        <p class="alert error" th:if="${agentError}" th:text="${agentError}"></p>
-    </form>
-    <section class="card" th:if="${agentResult}"><h2>Agent result</h2><pre class="agent-result" th:text="${agentResult}">Result</pre></section>
+
+    <svg class="agent-icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="agent-sparkle" viewBox="0 0 24 24"><path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2Z"/><path d="m19 15 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z"/></symbol>
+        <symbol id="agent-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20M8 7h8M8 10h7"/></symbol>
+        <symbol id="agent-cards" viewBox="0 0 24 24"><rect x="4" y="5" width="13" height="15" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12M7 10h7M7 13h6"/></symbol>
+        <symbol id="agent-quiz" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 9 2 2 5-5M8 16h8"/></symbol>
+        <symbol id="agent-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 17h6"/></symbol>
+        <symbol id="agent-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+        <symbol id="agent-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+        <symbol id="agent-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+        <symbol id="agent-send" viewBox="0 0 24 24"><path d="m21 3-7.5 18-3.8-7.7L2 9.5 21 3Z"/><path d="M21 3 9.7 13.3"/></symbol>
+        <symbol id="agent-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9a7 7 0 0 1 11.8-2L20 12M4 12l2.7 5a7 7 0 0 0 11.8-2"/></symbol>
+        <symbol id="agent-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    </svg>
+
+    <header class="agent-page-header">
+        <div><p class="eyebrow" th:text="${course.courseCode}">EECS3221</p>
+            <h1 id="agent-title">StudyForge assistant</h1>
+            <p class="agent-page-lede">Ask questions and start study tasks grounded in <strong th:text="${course.name}">Operating Systems</strong>.</p>
+        </div>
+        <span class="agent-powered"><svg class="agent-icon" aria-hidden="true"><use href="#agent-sparkle"/></svg> StudyForge AI</span>
+    </header>
+    <p class="alert success" th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+
+    <div class="agent-workspace">
+        <section class="agent-main-column" aria-label="Course assistant conversation">
+            <section class="agent-chat-panel" aria-labelledby="agent-chat-title">
+                <div class="agent-chat-heading"><div><p class="eyebrow">Course conversation</p><h2 id="agent-chat-title" th:text="${course.name}">Operating Systems</h2></div><div class="agent-chat-tools"><span class="agent-chat-status"><span></span> Course-scoped</span><form method="post" th:action="@{/courses/{id}/agent/clear(id=${course.id})}" onsubmit="return confirm('Clear this course assistant chat?')"><button class="agent-clear-chat" type="submit">Clear chat</button></form></div></div>
+                <div class="agent-conversation" aria-live="polite" aria-relevant="additions">
+                    <div class="agent-onboarding" th:if="${#lists.isEmpty(assistantMessages)}">
+                        <span class="assistant-avatar large" aria-hidden="true"><svg class="agent-icon"><use href="#agent-sparkle"/></svg></span>
+                        <h3>What would you like to learn today?</h3>
+                        <p>Ask a question or choose a starting point. Your requests stay within this course.</p>
+                    </div>
+                    <article class="agent-message-pair" th:each="message : ${assistantMessages}">
+                        <div class="agent-user-message"><span class="user-avatar" aria-hidden="true">You</span><div><small>You</small><p th:text="${message.prompt}">How should I study?</p></div></div>
+                        <div class="agent-assistant-message"><span class="assistant-avatar" aria-hidden="true"><svg class="agent-icon"><use href="#agent-sparkle"/></svg></span><div class="agent-answer-wrap"><small>CoursePilot <span class="message-context" th:text="${course.courseCode}">EECS3221</span></small>
+                            <section class="agent-answer-card" aria-label="Assistant answer">
+                                <span class="agent-answer-label"><svg class="agent-icon" aria-hidden="true"><use href="#agent-sparkle"/></svg> Answer</span>
+                                <p class="agent-history-intro" th:if="${!#lists.isEmpty(message.historyEvents())}" th:text="${message.result}">Here are your recent course activities.</p>
+                                <pre th:if="${#lists.isEmpty(message.historyEvents())}" th:text="${message.result}">Your course-scoped answer appears here.</pre>
+                                <section class="agent-history-results" th:if="${!#lists.isEmpty(message.historyEvents())}" aria-label="Recent course activity">
+                                    <article class="agent-history-event" th:each="event : ${message.historyEvents()}" th:classappend="|agent-history-event--${event.styleKey()}|">
+                                        <div class="agent-history-event-heading">
+                                            <span class="agent-history-event-type" th:text="${event.displayType()}">Quiz attempt</span>
+                                            <time th:text="${event.displayTimestamp()}" th:attr="datetime=${event.occurredAt}">Nov 2, 2026 at 9:30 AM</time>
+                                        </div>
+                                        <h3 th:text="${event.primaryDetail()}">8 of 10 correct</h3>
+                                        <p th:if="${!#strings.isEmpty(event.secondaryDetail())}" th:text="${event.secondaryDetail()}">Threads quiz</p>
+                                        <p th:if="${#strings.isEmpty(event.secondaryDetail())}" th:text="${event.detail}">Saved activity details</p>
+                                        <a class="agent-history-event-action" th:if="${event.hasAction()}" th:href="${event.actionUrl()}" th:text="${event.actionLabel()}">Open activity</a>
+                                    </article>
+                                </section>
+                            </section>
+                            <section class="agent-key-concepts" th:if="${!#lists.isEmpty(message.keyConcepts)}" aria-label="Key concepts"><strong>Key concepts</strong><div><span class="agent-concept-chip" th:each="concept : ${message.keyConcepts}" th:text="${concept}">Concept</span></div></section>
+                            <details class="agent-source-details" th:if="${!#lists.isEmpty(message.sources)}"><summary><svg class="agent-icon" aria-hidden="true"><use href="#agent-book"/></svg><span th:text="|Sources used (${#lists.size(message.sources)})|">Sources used (2)</span></summary><ul><li th:each="source : ${message.sources}" th:text="${source}">Course material · p. 12</li></ul></details>
+                            <div class="agent-answer-actions" aria-label="Continue learning from this answer">
+                                <span>Keep learning</span>
+                                <button type="button" th:attr="data-agent-prompt=|Explain that in simpler terms: ${message.prompt}|">Explain simply</button>
+                                <button type="button" th:attr="data-agent-prompt=|Give a course-based example of: ${message.prompt}|">Give an example</button>
+                                <button type="button" data-agent-prompt="Generate a practice quiz">Create quiz</button>
+                                <button type="button" data-agent-prompt="Create flashcards from my course materials" th:if="${readyMaterialCount > 0}">Make flashcards</button>
+                            </div>
+                            <form class="agent-rerun-form" method="post" th:action="@{/courses/{id}/agent(id=${course.id})}"><input type="hidden" name="request" th:value="${message.prompt}"><button type="submit" aria-label="Run this request again"><svg class="agent-icon" aria-hidden="true"><use href="#agent-refresh"/></svg> Run again</button></form>
+                            <a class="button primary agent-created-action" th:if="${!#strings.isEmpty(message.actionUrl)}" th:href="${message.actionUrl}" th:text="${message.actionLabel}">Open created item</a>
+                        </div></div>
+                    </article>
+                </div>
+                <section class="agent-prompt-ideas" aria-label="Suggested course tasks">
+                    <div class="agent-prompt-ideas-heading"><strong>Try a suggestion</strong><span>Available whenever you need them</span></div>
+                    <div class="agent-suggestions">
+                        <button type="button" data-agent-prompt="Show my weakest course topics to review"><svg class="agent-icon" aria-hidden="true"><use href="#agent-chart"/></svg> Find topics to review</button>
+                        <button type="button" data-agent-prompt="Find course materials about deadlocks"><svg class="agent-icon" aria-hidden="true"><use href="#agent-search"/></svg> Find course evidence</button>
+                        <button type="button" data-agent-prompt="Explain my course progress"><svg class="agent-icon" aria-hidden="true"><use href="#agent-chart"/></svg> Explain my progress</button>
+                        <button type="button" data-agent-prompt="Generate a practice quiz" th:if="${readyMaterialCount > 0}"><svg class="agent-icon" aria-hidden="true"><use href="#agent-quiz"/></svg> Create a practice quiz</button>
+                        <button type="button" data-agent-prompt="Create flashcards from my course materials" th:if="${readyMaterialCount > 0}"><svg class="agent-icon" aria-hidden="true"><use href="#agent-cards"/></svg> Make flashcards</button>
+                        <button type="button" data-agent-prompt="Summarize all my course materials" th:if="${readyMaterialCount > 0}"><svg class="agent-icon" aria-hidden="true"><use href="#agent-book"/></svg> Summarize course materials</button>
+                        <a th:href="@{/courses/{id}/study-plan(id=${course.id})}"><svg class="agent-icon" aria-hidden="true"><use href="#agent-calendar"/></svg> Build a study plan</a>
+                    </div>
+                    <p class="agent-material-scope" th:if="${readyMaterialCount > 0}">For summaries, quizzes, and flashcards, choose the material and scope you want. I will confirm before creating study content.</p>
+                    <p class="agent-material-scope" th:if="${readyMaterialCount == 0}">Upload a course material to enable document-based study tasks.</p>
+                </section>
+                <p class="alert error agent-error" th:if="${agentError}" th:text="${agentError}" role="alert"></p>
+                <form id="agent-chat-form" class="agent-composer" data-progress-operation="agent" method="post" th:action="@{/courses/{id}/agent(id=${course.id})}">
+                    <label for="agent-request" class="sr-only">Ask anything about this course</label>
+                    <textarea id="agent-request" name="request" maxlength="1000" rows="2" required th:text="${request}" th:placeholder="|Ask anything about ${course.name}...|"></textarea>
+                    <div class="agent-composer-footer"><span><kbd>Enter</kbd> to send <span aria-hidden="true">·</span> <kbd>Shift + Enter</kbd> for a new line</span><button class="button primary" type="submit"><span>Send</span><svg class="agent-icon" aria-hidden="true"><use href="#agent-send"/></svg></button></div>
+                </form>
+                <p class="agent-privacy-note"><svg class="agent-icon" aria-hidden="true"><use href="#agent-shield"/></svg> Responses and actions are limited to <strong th:text="${course.courseCode}">this course</strong>.</p>
+            </section>
+        </section>
+
+        <aside class="agent-insights-column" aria-label="Course context and insights">
+            <section class="agent-insights-card">
+                <div class="agent-section-heading compact"><div><p class="eyebrow">Course context</p><h2>Learning snapshot</h2></div><a class="agent-view-link" th:href="@{/courses/{id}/progress(id=${course.id})}">Progress</a></div>
+                <div class="agent-mini-metrics">
+                    <div><span>Course mastery</span><strong th:text="${progressSummary.hasActivity() ? #numbers.formatDecimal(progressSummary.overallScore(), 1, 0) + '%' : 'Not started'}">Not started</strong></div>
+                    <div><span>Areas to revisit</span><strong th:text="${weakTopicCount}">0</strong></div>
+                    <div><span>Ready materials</span><strong th:text="${readyMaterialCount}">0</strong></div>
+                </div>
+                <div class="agent-weakest-card" th:if="${weakestTopic != null}"><div class="insight-label">Area to revisit</div><strong th:text="${weakestTopic.topic}">CPU Scheduling</strong><div class="mastery-line"><span th:text="${weakestTopic.status}">DEVELOPING</span><strong th:text="${#numbers.formatDecimal(weakestTopic.score(), 1, 0) + '%'}">46%</strong></div><div class="mastery-track"><span th:style="'width:' + ${weakestTopic.score()} + '%'" style="width:46%"></span></div></div>
+                <div class="agent-insight-empty" th:if="${weakestTopic == null}"><strong>No topic scores yet</strong><p>Review flashcards or take a quiz to build course progress.</p></div>
+                <div class="agent-quiz-signal" th:if="${quizPerformance != null}"><span>Quiz performance</span><strong th:text="${#numbers.formatDecimal(quizPerformance.score(), 1, 0) + '%'}">20%</strong><small th:text="${quizPerformance.activities() + ' attempts recorded'}">1 attempt recorded</small></div>
+                <div class="agent-next-activity" th:if="${nextRecommendation != null}"><div class="insight-label">Suggested next activity</div><strong th:text="${nextRecommendation.title}">Review course material</strong><p th:text="${nextRecommendation.reason}">Based on saved course activity.</p><a th:href="${nextRecommendation.actionUrl}" th:text="${nextRecommendation.actionLabel}">Start reviewing</a></div>
+                <div class="agent-next-activity" th:unless="${nextRecommendation != null}"><div class="insight-label">Suggested next activity</div><strong>Explore a ready material</strong><p>Open a document to start building your learning history.</p><a th:href="@{/courses/{id}/materials(id=${course.id})}">View materials</a></div>
+                <div class="agent-exam-context"><span>Exam date</span><strong th:text="${course.examDate != null ? course.examDate : 'Not set'}">Not set</strong></div>
+            </section>
+
+            <section class="agent-course-card"><p class="eyebrow">Your course</p><h2 th:text="${course.name}">Operating Systems</h2><span class="agent-course-code-pill" th:text="${course.courseCode}">EECS3221</span>
+                <div class="course-resource-list"><a th:href="@{/courses/{id}/materials(id=${course.id})}"><svg class="agent-icon" aria-hidden="true"><use href="#agent-book"/></svg><span>Ready materials</span><strong th:text="${readyMaterialCount}">0</strong></a><a th:href="@{/courses/{id}/quizzes(id=${course.id})}"><svg class="agent-icon" aria-hidden="true"><use href="#agent-quiz"/></svg><span>Saved quizzes</span><strong th:text="${quizCount}">0</strong></a><a th:href="@{/courses/{id}/flashcards(id=${course.id})}"><svg class="agent-icon" aria-hidden="true"><use href="#agent-cards"/></svg><span>Flashcards</span><strong th:text="${flashcardCount}">0</strong></a></div>
+                <div class="last-activity"><span class="activity-pulse" aria-hidden="true"></span><span><small>Last learning activity</small><strong th:text="${lastActivityLabel}">No activity yet</strong></span></div>
+            </section>
+        </aside>
+    </div>
+    <section class="agent-created-content" th:if="${!#lists.isEmpty(assistantQuizzes) or !#lists.isEmpty(assistantFlashcards)}" aria-labelledby="assistant-created-title">
+        <div class="agent-section-heading"><div><p class="eyebrow">Created in this assistant</p><h2 id="assistant-created-title">Assistant-made study content</h2><p>These items are tagged separately from quizzes and flashcards made elsewhere.</p></div>
+            <form method="post" th:action="@{/courses/{id}/agent/delete-generated(id=${course.id})}" onsubmit="return confirm('Delete all quizzes and flashcards created by this assistant for this course?')"><button type="submit" class="button secondary">Remove assistant-created content</button></form>
+        </div>
+        <ul>
+            <li th:each="quiz : ${assistantQuizzes}"><a th:href="@{/courses/{courseId}/quizzes/{quizId}(courseId=${course.id},quizId=${quiz.id})}" th:text="${quiz.title}">Assistant quiz</a><span th:text="|${#lists.size(quiz.questions)} questions|">10 questions</span></li>
+            <li th:each="card : ${assistantFlashcards}"><span th:text="${card.question}">Assistant flashcard</span><span th:if="${!#lists.isEmpty(card.sources)}" th:text="${card.sources[0].documentName}">Material</span></li>
+        </ul>
+    </section>
 </main>
+<script th:src="@{/js/agent-workspace.js(v=2)}" defer></script>
 </body>
 </html>

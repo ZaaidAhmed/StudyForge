@@ -106,6 +106,7 @@ public class StudyAgentFacade {
     public SummaryResult summarizeTopic(Long courseId, String topic) { return summarizationService.summarizeTopic(courseId, topic); }
     public List<ExtractedConcept> extractConcepts(Long courseId, Long documentId) { return conceptExtractionService.extract(courseId, documentId); }
     public FlashcardGenerationResult generateFlashcards(Long courseId, Long documentId, Integer count) { return flashcardGenerationService.generate(courseId, documentId, count); }
+    public FlashcardGenerationResult generateAssistantFlashcards(Long courseId, Long documentId, Integer count) { return flashcardGenerationService.generate(courseId, documentId, count, ca.yorku.eecs3311.coursepilot.domain.model.CreationOrigin.ASSISTANT); }
     public List<FlashcardResponse> listFlashcards(Long courseId) { return flashcardReviewService.list(courseId); }
     public List<FlashcardResponse> listFlashcards(Long courseId, Long documentId) {
         courseMaterialService.getDocument(courseId, documentId);
@@ -119,6 +120,8 @@ public class StudyAgentFacade {
     }
     public List<FlashcardReviewResponse> flashcardReviewHistory(Long courseId) { return flashcardReviewService.history(courseId); }
     public QuizGenerationResult generateQuiz(Long courseId, Long documentId, Integer count, java.util.Set<String> types) { return quizGenerationService.generate(courseId, documentId, count, types); }
+    public QuizGenerationResult generateAssistantQuiz(Long courseId, Long documentId, Integer count, java.util.Set<String> types) { return quizGenerationService.generate(courseId, documentId, count, types, ca.yorku.eecs3311.coursepilot.domain.model.CreationOrigin.ASSISTANT); }
+    public int deleteAssistantCreatedStudyContent(Long courseId) { return flashcardReviewService.deleteAssistantCreated(courseId) + quizAttemptService.deleteAssistantCreated(courseId); }
     public List<QuizResponseDto> listQuizzes(Long courseId) { return quizAttemptService.list(courseId); }
     public QuizResponseDto getQuiz(Long courseId, Long quizId) { return quizAttemptService.get(courseId, quizId); }
     public void deleteQuiz(Long courseId, Long quizId) { quizAttemptService.delete(courseId, quizId); }

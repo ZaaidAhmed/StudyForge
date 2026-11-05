@@ -39,5 +39,15 @@ public class FlashcardReviewService {
         }
         flashcards.deleteAll(deck);
     }
+    @Transactional
+    public int deleteAssistantCreated(Long courseId) {
+        courseService.getCourse(courseId);
+        List<Flashcard> owned = flashcards.findByCourseIdAndCreationOrigin(courseId, CreationOrigin.ASSISTANT);
+        for (Flashcard card : owned) {
+            if (card.getId() != null) reviews.deleteAll(reviews.findByFlashcardId(card.getId()));
+        }
+        flashcards.deleteAll(owned);
+        return owned.size();
+    }
     @Transactional(readOnly = true) public List<FlashcardReviewResponse> history(Long courseId) { courseService.getCourse(courseId); return reviews.findByCourseIdOrderByIdAsc(courseId).stream().map(FlashcardReviewResponse::from).toList(); }
 }

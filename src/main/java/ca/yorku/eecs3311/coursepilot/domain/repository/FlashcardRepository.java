@@ -15,4 +15,7 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
     long countByCourseIdAndSourceDocumentId(@Param("courseId") Long courseId, @Param("documentId") Long documentId);
     @Query("select distinct f from Flashcard f left join fetch f.sources s left join fetch s.document where f.id = :id and f.course.id = :courseId")
     Optional<Flashcard> findByIdAndCourseIdWithSources(@Param("id") Long id, @Param("courseId") Long courseId);
+    @Query("select distinct f from Flashcard f left join fetch f.sources s left join fetch s.document where f.course.id=:courseId and f.creationOrigin=:origin order by f.id asc")
+    List<Flashcard> findByCourseIdAndCreationOrigin(@Param("courseId") Long courseId,
+                                                      @Param("origin") ca.yorku.eecs3311.coursepilot.domain.model.CreationOrigin origin);
 }

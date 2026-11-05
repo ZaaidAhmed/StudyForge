@@ -1,1 +1,15 @@
-package ca.yorku.eecs3311.coursepilot.application.agent; public enum AgentIntent { PROGRESS_REVIEW, WEAK_TOPIC_SUPPORT, HISTORY_REVIEW, NEXT_STEP, COURSE_SEARCH, SUMMARY_GENERATION, QUIZ_GENERATION, STUDY_PLAN_CREATION }
+package ca.yorku.eecs3311.coursepilot.application.agent;
+
+public enum AgentIntent {
+    PROGRESS_REVIEW,
+    WEAK_TOPIC_SUPPORT,
+    HISTORY_REVIEW,
+    NEXT_STEP,
+    COURSE_SEARCH,
+    COURSE_QUESTION,
+    SUMMARY_GENERATION,
+    FLASHCARD_GENERATION,
+    QUIZ_GENERATION,
+    STUDY_PLAN_CREATION,
+    UNSUPPORTED_REQUEST
+}
