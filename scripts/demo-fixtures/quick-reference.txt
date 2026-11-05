@@ -1,0 +1,6 @@
+StudyForge local demonstration reference
+
+Strategy: interchangeable algorithms selected by a context.
+Single responsibility: one reason for a class to change.
+Dependency inversion: depend on abstractions, not concrete implementations.
+Observer: notify subscribers when state changes.
