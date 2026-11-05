@@ -1,1 +1,130 @@
-<!DOCTYPE html><html lang="en" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{fragments/layout :: head('History')}"></head><body><header th:replace="~{fragments/layout :: topbar}"></header><aside th:replace="~{fragments/layout :: sidebar}"></aside><main class="content learning-content"><a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a><p class="eyebrow" th:text="${course.courseCode}">EECS3311</p><h1>Learning history</h1><p class="lede">A chronological record of your course learning activity.</p><section class="card"><p th:if="${#lists.isEmpty(history)}">No learning history yet. Review flashcards, take a quiz, or create a study plan.</p><div class="list" th:each="event : ${history}"><div><strong th:text="${event.type}">QUIZ_ATTEMPT</strong><p th:text="${event.title}">Quiz completed</p></div><p class="muted"><span th:text="${event.occurredAt}">time</span> · <span th:text="${event.detail}">detail</span></p></div></section></main></body></html>
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Learning history')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+<aside th:replace="~{fragments/layout :: sidebar}"></aside>
+<main class="content learning-content history-page">
+    <a class="back-link" th:href="@{/courses/{id}(id=${course.id})}">Back to course</a>
+
+    <header class="history-hero">
+        <div>
+            <p class="eyebrow" th:text="${course.courseCode}">EECS3311</p>
+            <p class="history-course-name" th:text="${course.name}">Software Design</p>
+            <h1>Learning history</h1>
+            <p class="lede">A clear timeline of your saved study activity in this course.</p>
+        </div>
+        <div class="history-count" aria-label="Recorded activity count">
+            <strong th:text="${totalHistoryCount}">0</strong>
+            <span>recorded activities</span>
+        </div>
+    </header>
+
+    <section class="history-summary" aria-label="Activity summary">
+        <a class="history-summary-card" th:href="@{/courses/{id}/history(id=${course.id},type='ALL')}" th:classappend="${selectedHistoryType == 'ALL' ? ' is-selected' : ''}" th:aria-current="${selectedHistoryType == 'ALL' ? 'true' : null}">
+            <span>All activity</span><strong th:text="${totalHistoryCount}">0</strong>
+        </a>
+        <a class="history-summary-card history-summary-card--flashcard" th:href="@{/courses/{id}/history(id=${course.id},type='FLASHCARD_REVIEW')}" th:classappend="${selectedHistoryType == 'FLASHCARD_REVIEW' ? ' is-selected' : ''}" th:aria-current="${selectedHistoryType == 'FLASHCARD_REVIEW' ? 'true' : null}">
+            <span>Flashcard reviews</span><strong th:text="${flashcardReviewCount}">0</strong>
+        </a>
+        <a class="history-summary-card history-summary-card--quiz" th:href="@{/courses/{id}/history(id=${course.id},type='QUIZ_ATTEMPT')}" th:classappend="${selectedHistoryType == 'QUIZ_ATTEMPT' ? ' is-selected' : ''}" th:aria-current="${selectedHistoryType == 'QUIZ_ATTEMPT' ? 'true' : null}">
+            <span>Quiz attempts</span><strong th:text="${quizAttemptCount}">0</strong>
+        </a>
+        <a class="history-summary-card history-summary-card--plan" th:href="@{/courses/{id}/history(id=${course.id},type='STUDY_PLAN')}" th:classappend="${selectedHistoryType == 'STUDY_PLAN' ? ' is-selected' : ''}" th:aria-current="${selectedHistoryType == 'STUDY_PLAN' ? 'true' : null}">
+            <span>Study plans</span><strong th:text="${studyPlanCount}">0</strong>
+        </a>
+    </section>
+
+    <div class="history-collapsed-hint" th:if="${!historyExpanded}" role="status">
+        <span class="history-collapsed-mark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7h16M7 4v6m10-6v6M5 5h14v15H5z"/><path d="m9 14 2 2 4-4"/></svg></span>
+        <div>
+            <strong>Choose an activity tab to explore your history</strong>
+            <p>Select flashcard reviews, quiz attempts, study plans, or all activity above.</p>
+        </div>
+    </div>
+
+    <section class="history-panel" aria-labelledby="history-timeline-title" th:if="${historyExpanded}">
+        <div class="history-panel-heading">
+            <div>
+                <p class="eyebrow">Your course activity</p>
+                <h2 id="history-timeline-title" th:text="${selectedHistoryType == 'ALL' ? 'Recent activity' : (selectedHistoryType == 'FLASHCARD_REVIEW' ? 'Flashcard reviews' : (selectedHistoryType == 'QUIZ_ATTEMPT' ? 'Quiz attempts' : 'Study plans'))}">Recent activity</h2>
+            </div>
+            <span class="history-limit-note" th:if="${totalHistoryCount == 100}">Showing the 100 most recent events</span>
+        </div>
+
+        <div class="history-empty" th:if="${totalHistoryCount == 0}">
+            <span class="history-empty-mark" aria-hidden="true">+</span>
+            <h3>No learning history yet</h3>
+            <p>Review flashcards, complete a quiz, or create a study plan to see your activity here.</p>
+            <div class="history-empty-actions">
+                <a class="button primary" th:href="@{/courses/{id}/practice(id=${course.id})}">Start practicing</a>
+                <a class="button secondary" th:href="@{/courses/{id}/study-plan(id=${course.id})}">Create a study plan</a>
+            </div>
+        </div>
+
+        <div class="history-filter-empty" th:if="${totalHistoryCount > 0 and #lists.isEmpty(history) and #lists.isEmpty(flashcardReviewDecks)}" role="status">
+            <h3>No matching activity</h3>
+            <p>There are no events in this category yet. Choose another activity type to continue browsing.</p>
+            <a class="button secondary" th:href="@{/courses/{id}/history(id=${course.id},type='ALL')}">Show all activity</a>
+        </div>
+
+        <div class="history-activity-stream" th:if="${!#lists.isEmpty(historySections)}" aria-live="polite">
+            <th:block th:each="section : ${historySections}">
+            <section class="history-day-group" th:if="${section.kind() == 'DAY'}"
+                     th:with="day=${section.day()}" th:attr="aria-label=${day.dateLabel()}">
+                <h3 class="history-day-heading" th:text="${day.dateLabel()}">Monday, November 2, 2026</h3>
+                <ol class="history-timeline-list">
+                    <li class="history-timeline-item" th:each="event : ${day.events()}">
+                        <span class="history-timeline-node" th:classappend="|history-node--${event.styleKey()}|" aria-hidden="true"></span>
+                        <article class="history-event" th:classappend="|history-event--${event.styleKey()}|">
+                            <div class="history-event-topline">
+                                <span class="history-event-type" th:text="${event.displayType()}">Quiz attempt</span>
+                                <time class="history-event-time" th:text="${event.displayTimestamp()}" th:attr="datetime=${event.occurredAt}">Nov 2, 2026 at 9:30 AM</time>
+                            </div>
+                            <h4 class="history-event-primary" th:text="${event.primaryDetail()}">Operating Systems quiz</h4>
+                            <p class="history-event-detail" th:if="${!#strings.isEmpty(event.secondaryDetail())}" th:text="${event.secondaryDetail()}">8 of 10 correct</p>
+                            <p class="history-event-detail" th:if="${#strings.isEmpty(event.secondaryDetail())}" th:text="${event.detail}">8 of 10 correct</p>
+                            <a class="history-event-action" th:if="${event.hasAction()}" th:href="${event.actionUrl()}" th:text="${event.actionLabel()}">Review activity</a>
+                        </article>
+                    </li>
+                </ol>
+            </section>
+
+            <section class="history-deck-section" th:if="${section.kind() == 'FLASHCARD_DECK'}"
+                     th:with="deck=${section.deck()}" aria-label="Flashcard review deck">
+                <details class="history-review-deck">
+                    <summary class="history-review-deck-summary">
+                        <span class="history-review-deck-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M6 3.75h8.2L19 8.6v11.65H6z"/><path d="M14 3.9v5h4.8M9 13h7M9 16h7"/></svg>
+                        </span>
+                        <span class="history-review-deck-context">
+                            <span class="history-review-deck-category">Flashcard review deck</span>
+                            <span class="history-review-deck-name" th:text="${deck.documentName()}">Scheduling notes.pdf</span>
+                            <span class="history-review-deck-latest" th:text="${deck.latestReviewLabel()}">Latest review: Saturday, October 31, 2026</span>
+                        </span>
+                        <span class="history-review-deck-count"><strong th:text="${deck.reviewCount()}">4</strong> reviews</span>
+                        <span class="history-review-deck-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="history-review-days">
+                        <section class="history-review-day" th:each="day : ${deck.reviewDays()}" th:attr="aria-label=${day.dateLabel()}">
+                            <h4 class="history-review-day-heading" th:text="${day.dateLabel()}">Saturday, October 31, 2026</h4>
+                            <ol class="history-review-cards" aria-label="Attempted flashcards">
+                                <li class="history-review-card" th:each="event : ${day.events()}">
+                                    <div class="history-review-card-meta">
+                                        <span class="history-event-type history-event-type--review" th:text="${event.secondaryDetail()}">Rated Good</span>
+                                        <time class="history-event-time" th:text="${event.displayTime()}" th:attr="datetime=${event.occurredAt}">8:57 PM</time>
+                                    </div>
+                                    <h3 th:text="${event.primaryDetail()}">What is a thread?</h3>
+                                    <a class="history-event-action" th:if="${event.hasAction()}" th:href="${event.actionUrl()}" th:text="${event.actionLabel()}">Review deck</a>
+                                </li>
+                            </ol>
+                        </section>
+                    </div>
+                </details>
+            </section>
+            </th:block>
+        </div>
+    </section>
+</main>
+</body>
+</html>
