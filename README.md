@@ -23,7 +23,7 @@ The test profile uses isolated in-memory H2. Development data uses file-based H2
 mvn spring-boot:run
 ```
 
-Open `http://localhost:8080/`. Create or open a course, then use **Manage materials** to upload PDF, TXT, or Markdown files. The application validates the extension, size, and content, calculates SHA-256, rejects same-course duplicates, stores a generated safe filename, extracts UTF-8/PDF text, normalizes it, chunks it, and persists document metadata and chunks.
+Open `http://localhost:8080/`. Create or open a course to see its evidence-backed next step, learning summary, and study tools. **Open Study Studio** opens the first ready document in the split reader-and-tutor workspace; if no ready document exists, it takes you to the course library to upload one. Use **Materials library** to upload PDF, TXT, or Markdown files. The application validates the extension, size, and content, calculates SHA-256, rejects same-course duplicates, stores a generated safe filename, extracts UTF-8/PDF text, normalizes it, chunks it, and persists document metadata and chunks.
 
 The Materials page also provides deterministic lexical search scoped to the current course. Search combines exact-phrase matching, term coverage, bounded term frequency, and a modest filename boost. It is not semantic search and does not use an LLM, embeddings, or a vector database.
 
@@ -63,24 +63,39 @@ java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication materia
 
 Search defaults to 5 results and accepts a maximum of 20. Queries with no relevant material return a friendly empty result. Search results preserve document name, chunk index, and PDF page metadata where available.
 
-## Phase 4 AI foundation
+## AI foundation and grounded learning
 
-The provider-neutral AI foundation is implemented without a user-facing Q&A feature. Ollama is accessed through `LlmClient` and `OllamaLlmAdapter` using Java's HTTP client and Jackson. The adapter uses bounded timeouts and does not contact Ollama during application startup.
+The provider-neutral AI foundation now supports grounded Q&A, document/topic summaries, concept extraction, flashcards, quizzes, short-answer grading, wrong-answer explanations, and bounded agent assistance. Ollama and Gemini are accessed through `LlmClient` adapters using Java's HTTP client and Jackson. Provider availability is checked only when requested and all calls use bounded timeouts.
 
-Configuration is overrideable with Spring properties. The installed local model `qwen2.5-coder:14b` is the default, but the model is fully configurable:
+Configuration is overrideable with Spring properties. The recommended local model is `qwen3:4b`, which uses substantially less memory and is faster for grounded quiz, flashcard, summary, and concept generation on typical student hardware. `qwen-claude-14b:latest` remains available as a quality fallback if the smaller model produces weaker results:
 
 ```properties
 coursepilot.ai.enabled=true
 coursepilot.ai.provider=ollama
 coursepilot.ai.base-url=http://localhost:11434
-coursepilot.ai.model=qwen2.5-coder:14b
+coursepilot.ai.model=qwen3:4b
 coursepilot.ai.connect-timeout=2s
-coursepilot.ai.request-timeout=30s
+coursepilot.ai.request-timeout=180s
 ```
+
+Switch models from **AI status** for the current running session, or change `COURSEPILOT_AI_MODEL` in `.env` for the persistent choice after restart. The status page only offers explicitly supported models for the selected provider. Both Ollama models run locally; Gemini sends bounded retrieved excerpts to Google's hosted API.
+
+Quiz generation uses bounded three-question batches and a smaller grounded context so larger requests such as 20 questions do not get truncated as one oversized model response.
 
 Use `studyforge ai status` to inspect availability. Ask a grounded question from `/courses/{id}/ask` or with `studyforge ask --course EECS3311 --question "..."`. Each question retrieves only that course's relevant material first, bounds the context, requires structured JSON, and validates returned source IDs. If Ollama is stopped, the application still starts and deterministic course/material/search features remain available.
 
- The web workflow is course-first: open a course, use the three-step workspace to upload material, search it, and then ask StudyForge. The sidebar labels implemented tools separately from planned features, and unavailable AI/material states include recovery actions.
+To use Gemini, put the key in the ignored project-root `.env` file and add:
+
+```env
+COURSEPILOT_AI_PROVIDER=gemini
+COURSEPILOT_AI_BASE_URL=https://generativelanguage.googleapis.com
+COURSEPILOT_AI_MODEL=gemini-3.5-flash-lite
+GEMINI_API_KEY=your_key_here
+```
+
+StudyForge loads `.env` for local development without printing its values. Real environment variables take precedence. Gemini sends bounded retrieved course excerpts to Google's hosted API, so use Ollama for material that must remain local. Gemini free-tier availability and quotas vary by account and model; rate limits can produce an actionable unavailable status.
+
+The web workflow is course-first: open a course, use the three-step workspace to upload material, search it, and then ask StudyForge. The sidebar labels implemented tools separately from planned features, and unavailable AI/material states include recovery actions.
 
 To ask questions about one specific uploaded document, open its **View details** link from the course library. PDFs open in a split document workspace with an inline preview and **Ask this PDF** panel. Document Q&amp;A uses only that document's retrieved chunks; course-wide Q&amp;A remains available from the course workspace.
 
@@ -92,11 +107,97 @@ To ask questions about one specific uploaded document, open its **View details**
 - `src/test/` - deterministic and MVC tests
 - `docs/` - approved Stage 1 design and Stage 2 traceability artifacts
 
+## How the project works
+
+The web application and CLI share the same application facade and services. Material is validated, extracted, and chunked before it is used by deterministic search or grounded AI study tools. Persistent course and study data stays in local H2 and uploaded files stay in the local data directory.
+
+```mermaid
+flowchart TB
+    learner([Learner])
+
+    subgraph interfaces["Ways to use StudyForge"]
+        direction LR
+        web["Web interface<br/>Spring MVC + Thymeleaf"]
+        cli["CLI<br/>Picocli"]
+    end
+
+    subgraph app["Shared StudyForge application"]
+        direction TB
+        webControllers["Web controllers"]
+        cliCommands["CLI commands"]
+        facade["StudyAgentFacade<br/>shared application facade"]
+
+        subgraph services["Course and learning services"]
+            direction LR
+            courseMaterial["Courses and material<br/>validation, extraction, chunking"]
+            lexical["Course-scoped lexical search<br/>deterministic; no LLM"]
+            grounded["Grounded learning tools<br/>Q&A, summaries, concepts"]
+            practice["Practice tools<br/>quiz/card generation, attempts, review"]
+            insights["Study plans, progress,<br/>history, recommendations"]
+            agent["Study agent<br/>bounded plan and whitelisted tools"]
+        end
+
+        evidence["Evidence pipeline<br/>select chunks and bound context"]
+        llmClient["Provider-neutral LlmClient<br/>Ollama HTTP adapter"]
+        validate["Structured response parsing<br/>and source-ID validation"]
+    end
+
+    subgraph local["Local persistence and AI"]
+        direction LR
+        db[("H2 file database<br/>courses, chunks, quizzes,<br/>cards, reviews, plans")]
+        files[("Upload directory<br/>PDF, TXT, Markdown")]
+        ollama["Ollama model<br/>runs locally"]
+    end
+
+    learner --> web
+    learner --> cli
+    web --> webControllers
+    cli --> cliCommands
+    webControllers --> facade
+    cliCommands --> facade
+    facade --> courseMaterial
+    facade --> lexical
+    facade --> grounded
+    facade --> practice
+    facade --> insights
+    facade --> agent
+
+    courseMaterial --> files
+    courseMaterial --> db
+    lexical --> db
+    grounded --> evidence
+    practice --> evidence
+    evidence -->|reads course chunks| db
+    evidence --> llmClient
+    agent --> llmClient
+    llmClient -->|request| ollama
+    ollama -->|response| llmClient
+    llmClient --> validate
+    validate --> grounded
+    validate --> practice
+    practice --> db
+    insights --> db
+    agent -.->|whitelisted tool calls| lexical
+    agent -.->|whitelisted tool calls| grounded
+    agent -.->|whitelisted tool calls| practice
+    agent -.->|whitelisted tool calls| insights
+
+    classDef interface fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b,stroke-width:1.5px;
+    classDef core fill:#f5f3ff,stroke:#7c3aed,color:#2e1065,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef external fill:#fff7ed,stroke:#ea580c,color:#7c2d12,stroke-width:1.5px;
+
+    class learner,web,cli,webControllers,cliCommands interface;
+    class facade,courseMaterial,lexical,grounded,practice,insights,agent,evidence,llmClient,validate core;
+    class db,files data;
+    class ollama external;
+```
+
 ## Current limitations
 
 Summarization and concept quality depends on the configured model; lexical retrieval is not semantic search, grounding reduces but cannot eliminate hallucination risk, and OCR remains future backlog work for image-only PDFs. No embeddings or vector database is used. The agent uses bounded observable plans and whitelisted tools; it does not execute shell, filesystem, SQL, or arbitrary HTTP actions.
 
-## Phase 6 grounded study tools
+## Summaries and concepts
 
 From a ready document workspace, choose **Summarize** or **Extract concepts**. Document summaries use only that document's persisted chunks and display the source document/chunk/page metadata used. Topic summaries are available from the course Materials page; they run deterministic course-scoped lexical search first and do not call the model when no relevant evidence exists. The Concepts navigation page lets you choose a ready document.
 
@@ -110,7 +211,7 @@ java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication summary
 java -cp $cp ca.yorku.eecs3311.coursepilot.cli.CoursePilotCliApplication concepts extract --course EECS3311 --document 6
 ```
 
-## Phase 7 flashcards
+## Flashcards and review
 
 Open **Flashcards** from a course workspace, choose a READY document, and request 5–20 cards. Generation uses only persisted chunks from that document, validates structured output and source IDs, removes duplicate questions deterministically, and persists valid cards with document/chunk/page provenance. Existing cards remain reviewable when Ollama is offline.
 
