@@ -14,7 +14,7 @@ Last checked: November 7, 2026. The Stage 1 proposal is the baseline; see the St
 | Weekly code commits | Listed; links response-checked | Five meaningful code commits are listed for each required period in `weekly-commit-summary.md`; all 15 commit URLs returned HTTP 200 to unauthenticated HEAD checks. |
 | AI collaboration and usage costs | Partial evidence | Representative work and known model details are recorded in `ai-collaboration-log.md`. Complete token/money totals are not present in the retained repository records and must come from authoritative platform usage/billing exports or be reported as unavailable. |
 | Final report PDF | Generated; visual review in progress | `stage2-report.pdf` was regenerated from `stage2-report.md` using Chrome. It is 7 pages, Letter size; inspect the final rendered pages before submission. |
-| Public repository submission | Not yet verified | Confirm final report/source/docs are pushed, links are public, README works from a clean clone, and no secrets/local data are tracked. |
+| Public repository submission | Published; partially verified | Compliance matrix, report, status page, and PDF are pushed to `StudyForge/master` and returned HTTP 200. Tracked/staged release paths were checked for excluded local data; README clean-clone and instructor-access verification remain. |
 
 ## Scope and limitations
 
