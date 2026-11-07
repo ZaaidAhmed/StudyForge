@@ -1,6 +1,6 @@
 # Stage 2 Demonstration Index
 
-Add public video links and timestamps after recording the actual application. Every feature must show invocation, input, running behavior, result, and relevant alternative/error behavior.
+Each row links to its standalone feature recording; `00:00` is the start of that video. Links were checked with unauthenticated HTTP HEAD requests on November 7, 2026. A successful HTTP response confirms the URL responds but does not replace playback review of the recording's content. CLI support and CLI video coverage are listed separately.
 
 | Feature | GUI demonstration | CLI demonstration | Timestamp | Status |
 |---|---|---|---|---|
@@ -11,11 +11,11 @@ Add public video links and timestamps after recording the actual application. Ev
 | F05 Summaries | [Watch online](https://youtu.be/XH3T5Gb1PJk) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/StudyForge_F05_GUI_CLI_Final_Merged.mp4) | Included in video: document summary, topic summary, key points, and grounded sources | 00:00 | Uploaded |
 | F06 Concepts | [Watch online](https://youtu.be/o8mz4fHb54Q) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F06_StudyForge_Concept_Extraction_GUI_CLI.mp4) | Included in video: `concepts extract` | 00:00 | Uploaded |
 | F07 Flashcards | [Watch online](https://youtu.be/gLEU1C3nofI) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F07_Flashcards_Download.mp4) | Included in video: `flashcards generate/list/review` | 00:00 | Uploaded |
-| F08 Quiz generation | [Watch online](https://youtu.be/NOIpg61Zin0) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F08_Fixed_Audio_Latest_GUI_1080p.mp4) | `quiz generate/list` pending | 00:00 | GUI uploaded; CLI evidence pending |
+| F08 Quiz generation | [Watch online](https://youtu.be/NOIpg61Zin0) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F08_Fixed_Audio_Latest_GUI_1080p.mp4) | CLI supports `quiz generate/list`; CLI demonstration is not in this feature video | 00:00 | GUI video uploaded; CLI video pending |
 | F09 Quiz grading | [Watch online](https://youtu.be/5k17vhDafk4) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F09_StudyForge_Quiz_Taking_Grading_Edited_1080p.mp4) | GUI-only by design | 00:00 | Uploaded |
 | F10 Wrong-answer explanation | [Watch online](https://youtu.be/m-_c432u1XY) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F10_Final_720p.mp4) | GUI-only by design | 00:00 | Uploaded |
 | F11 Progress | [Watch online](https://youtu.be/Kk_OJeXuBHU) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F11_StudyForge_Progress_WeakAreas_GUI_CLI_1080p.mp4) | `progress` (see video) | 00:00 | Uploaded |
 | F12 Study plan | [Watch online](https://youtu.be/XrigYJkYvk8) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/StudyForge_F12_Study_Plan_GUI_CLI_1080p.mp4) | `study-plan create/list` (see video) | 00:00 | Uploaded |
-| F13 Recommendations/agent | [Watch online](https://youtu.be/ATYw-0oPk8A) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F13_Assistant_REDOWNLOAD_1080p.mp4) | `recommend/agent` pending | 00:00 | GUI uploaded; CLI evidence pending |
+| F13 Recommendations/agent | [Watch online](https://youtu.be/ATYw-0oPk8A) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F13_Assistant_REDOWNLOAD_1080p.mp4) | CLI supports `recommend` and `agent`; CLI demonstration is not in this feature video | 00:00 | GUI video uploaded; CLI video pending |
 | F14 History/memory | [Watch online](https://youtu.be/91A3CTHtKxI) / [Download MP4](https://github.com/ZaaidAhmed/StudyForge/releases/download/stage2-demos/F14_Learning_History_CLI_Opening_Restored_720p.mp4) | `history` (see video) | 00:00 | Uploaded |
 | F15 Local/cloud AI provider selection (new) | [Watch online](https://youtu.be/LKDUHKkV1Gs) | ai status; local/cloud provider set per CLI run | 00:00 | Uploaded |

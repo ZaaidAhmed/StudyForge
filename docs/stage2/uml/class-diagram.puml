@@ -1,0 +1,177 @@
+@startuml StudyForgeStage2Implemented
+title StudyForge Stage 2 — Implemented class view
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "Presentation" {
+  class CourseController
+  class MaterialController
+  class AskController
+  class LearningController
+  class FlashcardController
+  class QuizController
+  class ProgressController
+  class StudyPlanController
+  class RecommendationController
+  class HistoryController
+  class AgentController
+  class AiStatusController
+  class CoursePilotCommand
+  class CliRunner
+}
+
+package "Application boundary" {
+  class StudyAgentFacade {
+    +askQuestion(...)
+    +summarizeDocument(...)
+    +extractConcepts(...)
+    +generateFlashcards(...)
+    +generateQuiz(...)
+    +submitQuiz(...)
+    +agentAssist(...)
+  }
+}
+
+package "Course and learning services" {
+  class CourseService
+  class CourseMaterialService
+  class CourseSearchService
+  class GroundedQuestionService
+  class SummarizationService
+  class ConceptExtractionService
+  class FlashcardGenerationService
+  class FlashcardReviewService
+  class QuizGenerationService
+  class QuizAttemptService
+  class WrongAnswerExplanationService
+  class ProgressService
+  class StudyPlanService
+  interface StudyPlanningStrategy
+  class BalancedStudyStrategy
+  class WeakTopicFocusedStrategy
+  class ExamCramStrategy
+  class RecommendationService
+  class LearningHistoryService
+}
+
+package "Bounded agent" {
+  class AgentCoordinator
+  class IntentAnalyzer
+  class TaskPlanner
+  class AgentPlanValidator
+  class AgentToolManager
+  class MemoryManager
+  class ResponseSynthesizer
+}
+
+package "Provider boundary" {
+  interface LlmClient
+  class RoutingLlmClient
+  class OllamaLlmAdapter
+  class GeminiLlmAdapter
+  class PromptBuilder
+  class GroundingContextBuilder
+  class StructuredResponseParser
+  class AiProperties
+}
+
+package "Domain and persistence" {
+  class Course
+  class CourseDocument
+  class DocumentChunk
+  class Flashcard
+  class FlashcardSource
+  class FlashcardReview
+  class Quiz
+  class QuizQuestion
+  class QuizSource
+  class QuizAttempt
+  class QuizResponse
+  class StudyPlan
+  class StudyPlanItem
+  interface CourseRepository
+  interface CourseDocumentRepository
+  interface DocumentChunkRepository
+  interface FlashcardRepository
+  interface FlashcardReviewRepository
+  interface QuizRepository
+  interface QuizAttemptRepository
+  interface StudyPlanRepository
+}
+
+CourseController --> StudyAgentFacade
+MaterialController --> StudyAgentFacade
+AskController --> StudyAgentFacade
+LearningController --> StudyAgentFacade
+FlashcardController --> StudyAgentFacade
+QuizController --> StudyAgentFacade
+ProgressController --> StudyAgentFacade
+StudyPlanController --> StudyAgentFacade
+RecommendationController --> StudyAgentFacade
+HistoryController --> StudyAgentFacade
+AgentController --> StudyAgentFacade
+CoursePilotCommand --> CliRunner
+CliRunner --> StudyAgentFacade
+StudyAgentFacade --> CourseService
+StudyAgentFacade --> CourseMaterialService
+StudyAgentFacade --> CourseSearchService
+StudyAgentFacade --> GroundedQuestionService
+StudyAgentFacade --> SummarizationService
+StudyAgentFacade --> ConceptExtractionService
+StudyAgentFacade --> FlashcardGenerationService
+StudyAgentFacade --> FlashcardReviewService
+StudyAgentFacade --> QuizGenerationService
+StudyAgentFacade --> QuizAttemptService
+StudyAgentFacade --> WrongAnswerExplanationService
+StudyAgentFacade --> StudyPlanService
+StudyAgentFacade --> RecommendationService
+StudyAgentFacade --> LearningHistoryService
+StudyAgentFacade --> AgentCoordinator
+AgentCoordinator --> IntentAnalyzer
+AgentCoordinator --> TaskPlanner
+AgentCoordinator --> AgentPlanValidator
+AgentCoordinator --> AgentToolManager
+AgentCoordinator --> MemoryManager
+AgentCoordinator --> ResponseSynthesizer
+AgentToolManager --> ProgressService
+AgentToolManager --> RecommendationService
+AgentToolManager --> LearningHistoryService
+GroundedQuestionService --> CourseSearchService
+GroundedQuestionService --> GroundingContextBuilder
+GroundedQuestionService --> PromptBuilder
+GroundedQuestionService --> LlmClient
+SummarizationService --> LlmClient
+ConceptExtractionService --> LlmClient
+FlashcardGenerationService --> GroundingContextBuilder
+FlashcardGenerationService --> LlmClient
+QuizGenerationService --> GroundingContextBuilder
+QuizGenerationService --> LlmClient
+WrongAnswerExplanationService --> LlmClient
+AiStatusController --> AiProperties
+LlmClient <|.. RoutingLlmClient
+LlmClient <|.. OllamaLlmAdapter
+LlmClient <|.. GeminiLlmAdapter
+RoutingLlmClient --> AiProperties
+StudyPlanService --> StudyPlanningStrategy
+StudyPlanningStrategy <|.. BalancedStudyStrategy
+StudyPlanningStrategy <|.. WeakTopicFocusedStrategy
+StudyPlanningStrategy <|.. ExamCramStrategy
+Course "1" o-- "0..*" CourseDocument
+CourseDocument "1" *-- "1..*" DocumentChunk
+Flashcard "1" o-- "0..*" FlashcardSource
+Flashcard "1" o-- "0..*" FlashcardReview
+Quiz "1" *-- "1..*" QuizQuestion
+QuizQuestion "1" o-- "0..*" QuizSource
+Quiz "1" o-- "0..*" QuizAttempt
+QuizAttempt "1" *-- "0..*" QuizResponse
+StudyPlan "1" *-- "1..*" StudyPlanItem
+CourseService --> CourseRepository
+CourseMaterialService --> CourseDocumentRepository
+CourseMaterialService --> DocumentChunkRepository
+CourseSearchService --> DocumentChunkRepository
+FlashcardGenerationService --> FlashcardRepository
+FlashcardReviewService --> FlashcardReviewRepository
+QuizGenerationService --> QuizRepository
+QuizAttemptService --> QuizAttemptRepository
+StudyPlanService --> StudyPlanRepository
+@enduml

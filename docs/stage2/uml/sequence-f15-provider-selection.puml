@@ -1,0 +1,34 @@
+@startuml StudyForgeF15ProviderSelection
+actor Student
+participant CoursePilotCommand
+participant AiStatusController
+participant AiProperties
+participant RoutingLlmClient
+participant OllamaLlmAdapter
+participant GeminiLlmAdapter
+Student -> AiStatusController: choose provider and model
+AiStatusController -> AiStatusController: validate provider/model pair
+alt valid choice
+  AiStatusController -> AiProperties: update running configuration
+  AiStatusController --> Student: selected provider/model confirmation
+else invalid choice
+  AiStatusController --> Student: validation error; current config retained
+end
+Student -> CoursePilotCLI: set provider/model environment for process
+CoursePilotCLI -> AiStatusCommand: ai status
+AiStatusCommand -> RoutingLlmClient: checkAvailability()
+RoutingLlmClient -> AiProperties: read active provider
+alt provider is Ollama
+  RoutingLlmClient -> OllamaLlmAdapter: checkAvailability()
+  OllamaLlmAdapter --> RoutingLlmClient: availability
+else provider is Gemini
+  RoutingLlmClient -> GeminiLlmAdapter: checkAvailability()
+  GeminiLlmAdapter --> RoutingLlmClient: availability
+end
+RoutingLlmClient --> AiStatusCommand: provider/model status
+AiStatusCommand --> Student: active configuration and availability
+note over Student,AiStatusCommand
+CLI selection is environment-based; there is no CLI switch command.
+GUI changes apply to the running application session.
+end note
+@enduml

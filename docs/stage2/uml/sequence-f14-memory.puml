@@ -1,0 +1,29 @@
+@startuml StudyForgeF14Memory
+actor Student
+participant AgentController
+participant StudyAgentFacade
+participant AgentCoordinator
+participant AgentToolManager
+participant MemoryManager
+participant LearningHistoryService
+participant ResponseSynthesizer
+Student -> AgentController: request(course, goal)
+AgentController -> StudyAgentFacade: agentAssist(courseId, goal)
+StudyAgentFacade -> AgentCoordinator: run(courseId, goal)
+AgentCoordinator -> AgentToolManager: execute(validatedSteps)
+AgentToolManager --> AgentCoordinator: course-scoped tool results
+AgentCoordinator -> MemoryManager: recent(courseId)
+MemoryManager -> LearningHistoryService: recent(courseId, 10)
+LearningHistoryService --> MemoryManager: newest ten persisted events
+MemoryManager --> AgentCoordinator: typed HistoryEvent list
+AgentCoordinator -> ResponseSynthesizer: synthesize(intent, results, memory)
+ResponseSynthesizer --> AgentCoordinator: student-facing response
+AgentCoordinator --> StudyAgentFacade: result
+StudyAgentFacade --> AgentController: result
+AgentController --> Student: response
+note over LearningHistoryService
+History is derived from flashcard reviews,
+quiz attempts, and study-plan creation only;
+the full page/CLI list is capped at 100.
+end note
+@enduml

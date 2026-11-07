@@ -1,35 +1,21 @@
-# Stage 2 - AI Collaboration Log
+# Stage 2 AI-Human Collaboration and Usage Record
 
-This is the canonical implementation log required by the project instructions. The Phase 1 entry is intentionally concise and does not claim user review of individual code decisions.
+This record summarizes representative AI contributions, not every prompt. Entries are limited to evidence retained in project documentation and the development conversation. Unknown model names, token counts, and billing totals are explicitly left unknown rather than reconstructed by guesswork.
 
-| Phase | AI tool/platform | Model | Input/instruction | Contribution | Human verification |
-|---|---|---|---|---|---|
-| Phase 1 | Codex coding agent | GPT-5 | Implement and verify the approved Phase 1 foundation and F01 while preserving the package root and architecture. | Created the Maven/Spring foundation, course domain/service/facade, GUI, CLI foundation, tests, and documentation updates; corrected verification findings in CLI exit handling, test setup, and form validation binding. | PENDING USER REVIEW; automated build, web, CLI, and persistence checks passed. |
-| Phase 2 | Codex coding agent | GPT-5 | Implement deterministic F02 document import without starting retrieval or AI phases. | Added JPA document/chunk persistence, validation, SHA-256 duplicate detection, safe storage, PDFBox/TXT/Markdown extraction, normalization, chunking, web materials UI, CLI material commands, tests, and traceability updates. During verification, fixed the CLI wrapped-exception path so duplicate imports produce controlled errors without stack traces. | PENDING USER REVIEW; automated and manual verification completed. |
-| Phase 3 | Codex coding agent | GPT-5 | Implement deterministic F03 course-scoped material retrieval without LLM, OCR, embeddings, or vector storage. | Added query normalization, configurable lexical scoring, READY/course-scoped repository retrieval, threshold/top-K ranking, source-aware results, web search, CLI search, tests, and UML/traceability updates. | PENDING USER REVIEW; automated verification completed; packaged web/CLI/persistence demo pending final review. |
+| Work area | AI tool/platform and model evidence | Representative instruction/task | AI contribution | Human contribution and outcome |
+|---|---|---|---|---|
+| Foundation and F01-F03 | Codex coding assistant; retained Phase 1-3 log identifies GPT-5. | Implement the approved project foundation, course management, material import, and deterministic retrieval while preserving architecture boundaries. | Created/refined Spring MVC/Thymeleaf, Picocli, shared services/facade, H2/JPA persistence, document processing, lexical search, tests, and design traceability. | Student specified the Stage 1 design and constraints, reviewed CLI/GUI behaviors, supplied observed issues, and requested corrections. The retained log records build, web, CLI, and persistence checks for those phases. |
+| AI boundary and grounded learning F04-F08 | Codex coding assistant; exact coding-model name not retained for these later phases. Runtime models include Ollama `qwen3:4b`, `qwen-claude-14b:latest`, and configured Gemini models. | Build provider-neutral grounded answers, summaries, concepts, flashcards, and quizzes; diagnose malformed/low-quality outputs and count shortfalls. | Implemented typed LLM adapters/prompts/parsers, source validation, quality checks, duplicate handling, retries/backfill, and recovery diagnostics/tests. | Student selected workflows, supplied failures/screenshots and actual CLI results, rejected weak outputs, and directed quality/count improvements. Application code keeps model output behind deterministic validation. |
+| Quiz grading, progress, plans, F09-F12 | Codex coding assistant; exact later coding-model name not retained. | Implement saved quiz attempts, correct-answer review/explanations, progress, and constrained strategy-based plans. | Added services, persisted records, UI workflows, deterministic objective grading, short-answer fallback, strategy allocation, and tests. | Student specified the full-quiz flow, requested explanations only on demand, asked for saved-attempt navigation, and reviewed/adjusted plan presentation and completion behavior. |
+| Agent and F14 history | Codex coding assistant; exact later coding-model name not retained. Application runtime uses the configured local/cloud provider for selected generation tasks. | Improve bounded course-scoped assistant tasks, follow-up clarification, history presentation, and selective ten-event memory. | Implemented/updated intent/planning validation, allowlisted tools, assistant-created-content provenance, chronological history aggregation, and UI crosswalks. | Student supplied interaction requirements and screenshots, reported wrong answers and UI mismatches, and clarified history grouping/date ordering and course-scoped behavior. |
+| F15 provider selection and release documentation | Codex coding assistant; exact historical model/usage not present in retained repo log. | Explain and verify GUI/provider choice versus CLI environment-based configuration; prepare navigable feature commands and submission traceability. | Updated README command guide and documented Ollama/Gemini adapters, routing, CLI status, and compliance evidence. | Student requested both GUI and CLI explanations and supplied real terminal output. Report distinguishes GUI runtime changes from CLI environment configuration. |
 
-Future entries will record representative implementation, debugging, refactoring, and testing interactions. The older `ai-human-collaboration-log.md` remains as the Phase 0.5 template.
+## Usage and cost accounting
 
-## Phase 4
+| Category | Evidence-backed record |
+|---|---|
+| Local Ollama application inference | No hosted API charge; actual electricity/hardware cost was not measured. The app does not record token usage. |
+| Gemini application inference | Token and monetary totals must be exported from the Gemini account's usage/billing records. No authoritative aggregate was retained in this repository. |
+| Codex development assistance | GPT-5 is recorded for Phases 1-3. Exact model names for later work and aggregate input/output-token or monetary totals are not present in the retained project logs. Obtain them from the platform's usage export if available; if unavailable, report that limitation in the submitted report. |
 
-- Implemented the provider-neutral AI foundation and Ollama Adapter with Java `HttpClient` and Jackson.
-- Kept Ollama optional at startup; availability is checked only by the explicit status capability.
-- Added tests for provider-down behavior, disabled mode, request translation, prompt sections, and fenced JSON parsing.
-- Verified the local Ollama installation and configured model without implementing Q&A or later AI features.
-
-## Phase 5
-
-- Implemented F04 as a retrieval-first application service using F03 and the provider-neutral Phase 4 client.
-- Added deterministic source IDs, bounded context, strict grounding/prompt-injection instructions, structured response validation, and graceful insufficiency/unavailability behavior.
-- Added shared web/CLI flows and fake-client tests covering no-evidence short-circuiting, ordering, source mapping, invalid references, model insufficiency, and prompt framing.
-
-## Phase 6
-
-- Implemented F05/F06 using the existing provider-neutral boundary, persisted chunks, grounding context builder, structured parser, and shared facade.
-- Added bounded document/topic summarization, source validation, structured concept extraction, deterministic duplicate merging, web routes/templates, CLI commands, and documentation.
-- Automated verification is complete for the existing suite; real-provider and final packaged-JAR/UI verification remain recorded as PENDING USER REVIEW until the rebuilt application is inspected.
-
-## Phase 7
-
-- Added F07 flashcard generation/review, relational provenance and review persistence, structured prompts/responses, active navigation, responsive web pages, and shared CLI commands.
-- Existing automated regression remained green. Real Ollama attempts were made with both locally available models; both returned controlled structured-output failures, so no unverified AI cards were persisted. Human review remains PENDING USER REVIEW.
+Do not interpret missing usage telemetry as zero cost. Do not include API keys, credentials, private account details, or unverified cost estimates in the final report.
