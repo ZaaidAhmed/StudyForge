@@ -3,7 +3,7 @@
 **Course:** EECS3311 Software Design, Fall 2026
 **Repository:** [ZaaidAhmed/StudyForge](https://github.com/ZaaidAhmed/StudyForge)
 **Report evidence checked:** November 7, 2026
-**Status:** Java 21 tests, package build, fresh-JAR web smoke, CLI command discovery, and public link response checks passed locally. Exact in-video segment review, provider billing exports, final GitHub publication, and instructor-access confirmation remain evidence gates.
+**Status:** Java 21 tests, package build, fresh-JAR web smoke, CLI checks, public video/asset/commit link response checks, and publication to `StudyForge/master` passed. GitHub returns HTTP 200 for the published report, status page, compliance matrix, and PDF. Exact video-content review, provider billing exports, clean-clone verification, and instructor-access confirmation remain evidence gates.
 
 ## 1. Project overview and implementation status
 
@@ -106,7 +106,7 @@ The tests cover deterministic services, parsing, retrieval, repository behavior,
 
 ### Repository and release evidence
 
-The weekly summary lists five meaningful code commits in each reporting period (October 20-26, October 27-November 2, and November 3-9, Toronto local dates). Unauthenticated HTTP HEAD checks on November 7 returned status 200 for all 15 commit links. `.gitignore` excludes `.env`, local data/uploads, logs, build output, and local config; `.env.example` contains placeholders, not a credential. The final Git index must still be checked after staging to ensure none of those excluded classes were force-added.
+The weekly summary lists five meaningful code commits in each reporting period (October 20-26, October 27-November 2, and November 3-9, Toronto local dates). Unauthenticated HTTP HEAD checks on November 7 returned status 200 for all 15 commit links. `.gitignore` excludes `.env`, local data/uploads, logs, build output, and local config; `.env.example` contains placeholders, not a credential. The tracked-file list and staged release set were checked; neither contains `.env`, local databases, uploads, logs, or build output.
 
 ## 7. Demonstration index
 
@@ -126,4 +126,4 @@ The following diagram summarizes the implemented classes and important dependenc
 - Confirm exact timestamps and contents for every demonstration; create/attach F08 and F13 CLI evidence if not present in the hosted clips.
 - Complete AI development-tool/model/token/money-cost records from authoritative usage data or state platform telemetry limitations precisely.
 - Repeat verification on the exact commit that will be submitted; the current local package, web smoke, and CLI help checks passed, while full GUI/CLI feature workflow recording remains outstanding.
-- Publish the report, diagrams, README, safe sample configuration, source, weekly links, and videos in the public repository, then verify the submitted revision and instructor access.
+- The report, diagrams, README links, safe sample configuration, source, weekly links, and videos are present in the public repository; HTTP 200 was verified for the report, status page, compliance matrix, and PDF. Verify clean-clone behavior and instructor access before submission.

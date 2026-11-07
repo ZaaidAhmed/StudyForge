@@ -27,5 +27,6 @@ Updated November 7, 2026. Check items only after the final evidence exists.
 - [x] AI tools/models/tasks/human review are documented from retained evidence; unknown model names are identified as unknown.
 - [x] Missing token/money totals are explicitly reported as unavailable in retained project records, with authoritative provider exports identified as the source needed for numeric totals.
 - [x] Regenerated and visually inspected the 8-page `stage2-report.pdf`; crosswalk tables use landscape pages and the UML page is readable.
-- [ ] Confirm complete source and required report/docs are pushed to the same public repository.
+- [x] Push the report, diagrams, README links, compliance matrix, and evidence docs to public `StudyForge/master`; key GitHub pages and PDF returned HTTP 200.
+- [ ] Verify a clean-clone README walkthrough and instructor access to the submitted revision.
 - [ ] Check tracked files for credentials, local databases/uploads, logs, or generated runtime artifacts.
