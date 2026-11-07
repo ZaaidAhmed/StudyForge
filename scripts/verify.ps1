@@ -7,8 +7,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$jar = Join-Path $root 'target\studyforge-ai-0.1.0-SNAPSHOT.jar'
+$jar = Join-Path (Join-Path $root 'target') 'studyforge-ai-0.1.0-SNAPSHOT.jar'
 $proc = $null
+$smokeData = Join-Path ([System.IO.Path]::GetTempPath()) "studyforge-smoke-$PID"
 
 try {
     if (-not $JavaHome) {
@@ -37,7 +38,25 @@ try {
         try { & $MavenCommand -B clean package } finally { Pop-Location }
     }
     if (-not (Test-Path $jar)) { throw "Packaged JAR was not found: $jar" }
-    $proc = Start-Process -FilePath 'java' -ArgumentList @('-jar', $jar, "--server.port=$Port") -WorkingDirectory $root -PassThru -WindowStyle Hidden
+    $null = New-Item -ItemType Directory -Path $smokeData -Force
+    $uploadDir = Join-Path $smokeData 'uploads'
+    $databasePath = Join-Path $smokeData 'coursepilot'
+    $null = New-Item -ItemType Directory -Path $uploadDir -Force
+    $startArguments = @(
+        '-jar',
+        "`"$jar`"",
+        "--server.port=$Port",
+        "--spring.datasource.url=jdbc:h2:file:$databasePath;DB_CLOSE_DELAY=-1",
+        "--coursepilot.storage.upload-dir=$uploadDir"
+    )
+    $startProcessParameters = @{
+        FilePath         = 'java'
+        ArgumentList     = $startArguments
+        WorkingDirectory = $root
+        PassThru         = $true
+    }
+    if ($windowsHost) { $startProcessParameters.WindowStyle = 'Hidden' }
+    $proc = Start-Process @startProcessParameters
     $base = "http://localhost:$Port"
     $ready = $false
     for ($i = 0; $i -lt 45; $i++) {
@@ -56,4 +75,5 @@ try {
     Write-Host "Fresh-JAR smoke verification passed on $base"
 } finally {
     if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+    if (Test-Path $smokeData) { Remove-Item -LiteralPath $smokeData -Recurse -Force }
 }
