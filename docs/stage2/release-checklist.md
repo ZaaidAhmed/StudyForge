@@ -21,7 +21,8 @@ Updated November 7, 2026. Check items only after the final evidence exists.
 ## Demonstrations and report
 
 - [x] URL response checked without authentication: 15 YouTube links and 14 release assets returned HTTP 200 (Nov 7, 2026).
-- [ ] Playback/content and exact segment timestamps reviewed; F08 and F13 CLI video recordings are explicitly marked pending in the index.
+- [x] F08 and F13 published MP4s sampled in Chrome. F08 CLI segment at 01:35 demonstrates quiz generation/listing; F13's 03:05 CLI walkthrough does not show `recommend`/`agent`.
+- [ ] Review remaining feature recordings and record targeted F13 `recommend`/`agent` CLI video evidence.
 - [x] Three reporting periods each list five meaningful code commits.
 - [x] All 15 weekly commit links returned HTTP 200 to unauthenticated HEAD checks (Nov 7, 2026).
 - [x] AI tools/models/tasks/human review are documented from retained evidence; unknown model names are identified as unknown.

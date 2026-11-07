@@ -110,9 +110,9 @@ The weekly summary lists five meaningful code commits in each reporting period (
 
 ## 7. Demonstration index
 
-The public index is `docs/stage2/demo-index.md`. Each listed link is a dedicated feature video and points to `00:00`, the start of that standalone feature recording. Unauthenticated HTTP HEAD checks on November 7, 2026 returned status 200 for all 15 YouTube URLs and all 14 listed GitHub release assets. This verifies URL response, not that a human viewer can play every video or that every expected behavior appears in it; final playback/content review is still required.
+The public index is `docs/stage2/demo-index.md`. Unauthenticated HTTP HEAD checks on November 7, 2026 returned status 200 for all 15 YouTube URLs and all 14 listed GitHub release assets. The F08 and F13 release MP4s were downloaded and inspected in Chrome at multiple points. F08 includes GUI generation and a CLI segment beginning at 01:35; it shows quiz generation/listing and a 20-question saved result. F13 includes GUI assistant examples and a general CLI walkthrough beginning at 03:05, but the CLI segment does not show the F13 `recommend` or `agent` commands. URL availability and sampled playback do not establish full-content review of all 15 recordings.
 
-The index identifies F08 and F13 CLI video evidence as pending even though their commands are implemented. Packaged-JAR help was checked for `quiz`, `recommend`, and `agent`; full `quiz generate` and agent task executions were not run as part of the read-only smoke. Record CLI demonstrations for `quiz generate/list`, `recommend`, and `agent`, or clearly submit the current feature clips as GUI evidence and disclose the missing CLI recording. F09/F10 are correctly marked GUI-only. The set of recordings must collectively show both interfaces and explain each feature and relevant alternatives/errors.
+F08 GUI/CLI video evidence is present in the published clip; the CLI segment begins at 01:35. F13's published clip contains a general CLI walkthrough but does not demonstrate its `recommend` or `agent` commands, so targeted F13 CLI video evidence remains open. Packaged-JAR help was checked for `quiz`, `recommend`, and `agent`; F08's actual GUI video shows generation and the saved count. F09/F10 are correctly marked GUI-only. Full review of every recording, authoritative AI billing exports, clean-checkout verification, and instructor-access confirmation remain open.
 
 ## 8. Updated UML class diagram
 
@@ -123,7 +123,7 @@ The following diagram summarizes the implemented classes and important dependenc
 ## 9. Submission gates and known evidence gaps
 
 - Review playback and exact content for all 15 YouTube videos; unauthenticated link response checks returned HTTP 200 for all YouTube and listed release asset URLs.
-- Confirm exact timestamps and contents for every demonstration; create/attach F08 and F13 CLI evidence if not present in the hosted clips.
+- Confirm exact timestamps and contents for all remaining demonstrations; record targeted F13 `recommend`/`agent` CLI evidence.
 - Complete AI development-tool/model/token/money-cost records from authoritative usage data or state platform telemetry limitations precisely.
 - Repeat verification on the exact commit that will be submitted; the current local package, web smoke, and CLI help checks passed, while full GUI/CLI feature workflow recording remains outstanding.
 - The report, diagrams, README links, safe sample configuration, source, weekly links, and videos are present in the public repository; HTTP 200 was verified for the report, status page, compliance matrix, and PDF. Verify clean-clone behavior and instructor access before submission.
