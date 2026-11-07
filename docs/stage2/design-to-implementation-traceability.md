@@ -45,6 +45,6 @@ This is the implementation crosswalk for the Stage 1 proposal and Stage 2 requir
 ## Evidence caveats
 
 - Demo URLs are in the published index; public accessibility and exact timestamps still require unauthenticated playback verification. `t=0` points to the start of the feature video, not a verified later segment boundary.
-- The public index currently lists F08/F13 CLI evidence as pending. Their commands are implemented, but the public feature-specific clips must be checked or supplemented before claiming CLI video proof for them.
+- The published F08 MP4 was reviewed and includes `quiz generate/list` in its CLI segment from 01:35. The F13 MP4 includes a general CLI walkthrough from 03:05 but does not show `recommend` or `agent`; targeted F13 CLI video evidence is still needed.
 - The Stage 2 automated suite is not the Stage 3 KUMA agent-validation deliverable.
 - Test/run statuses in this file must be updated only from the final release run, not historical build notes.

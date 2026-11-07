@@ -10,7 +10,8 @@
 - Packaged CLI help for `quiz`, `recommend`, and `agent` passed. Read-only `quiz list --course EECS3221`, `recommend --course EECS3221`, and `history --course EECS3221` completed. Quiz generation and agent task execution were not run in this read-only check.
 - All 15 YouTube links, 14 release assets, and 15 weekly commit links returned HTTP 200 to unauthenticated HEAD requests. This checks URL response, not playback or video content.
 - The regenerated report PDF is 8-page Letter size; the landscape crosswalk and UML overview were visually inspected.
-- Remaining submission gates: human video/content and timestamp review; F08/F13 CLI video recording; authoritative AI usage/billing records where available; clean-checkout and instructor-access check.
+- Video inspection: the F08 release MP4 was reviewed and includes CLI `quiz generate/list` from 01:35. The F13 MP4 has a general CLI walkthrough from 03:05, but it does not show `recommend` or `agent`; targeted F13 CLI recording remains open. Other feature videos still need full review.
+- Remaining submission gates: targeted F13 CLI video; authoritative AI usage/billing records where available; clean-checkout and instructor-access check; final GitHub Actions rerun after fixing a Linux-only filename validation test failure.
 
 ## Historical verification record (not current release status)
 

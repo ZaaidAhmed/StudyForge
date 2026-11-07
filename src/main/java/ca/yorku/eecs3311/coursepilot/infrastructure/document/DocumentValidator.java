@@ -28,6 +28,11 @@ public class DocumentValidator {
         if (filename.chars().anyMatch(ch -> Character.isISOControl(ch) || ch == '"' || ch == '\'')) {
             throw new DocumentValidationException("The filename contains unsupported characters.");
         }
+        // Upload names are client supplied. Reject both separator styles on every OS so a
+        // Windows path cannot slip through validation when the server runs on Unix (or vice versa).
+        if (filename.indexOf('/') >= 0 || filename.indexOf('\\') >= 0) {
+            throw new DocumentValidationException("The filename is invalid.");
+        }
         String cleanName = Paths.get(filename).getFileName().toString();
         if (!cleanName.equals(filename) || cleanName.contains("..")) {
             throw new DocumentValidationException("The filename is invalid.");
