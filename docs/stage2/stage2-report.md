@@ -97,6 +97,7 @@ Representative interactions are recorded in `ai-collaboration-log.md`. That log 
 - **Date/environment:** November 7, 2026, OpenJDK 21.0.12.1, Maven Daemon 1.0.6.
 - **Automated suite:** `mvnd clean test` completed successfully: **207 tests, 0 failures, 0 errors, 0 skipped**.
 - **Package:** `mvnd package` completed successfully on Java 21 on November 7, 2026; it reran the suite with **207 tests, 0 failures, 0 errors, 0 skipped** and produced `target/studyforge-ai-0.1.0-SNAPSHOT.jar`.
+- **GitHub Actions:** the cross-platform `Verify` workflow passed on commit `c30308c` (Ubuntu, Java 21): **207 tests, 0 failures, 0 errors, 0 skipped**, packaged application built, and fresh-JAR smoke passed. The earlier red checks were caused by a Unix-host filename test gap; upload validation now rejects both slash styles on every operating system.
 - **Fresh-JAR web smoke:** `scripts/verify.ps1 -SkipBuild -Port 18080` started the packaged JAR and received HTTP 200 from `/`, `/courses`, and `/ai/status`.
 - **CLI checks:** packaged-JAR help commands for `quiz`, `recommend`, and `agent` completed. Read-only `quiz list --course EECS3221`, `recommend --course EECS3221`, and `history --course EECS3221` also completed. This confirms command registration and these read workflows, not a full AI-backed quiz generation or agent task run.
 - **Provider and live AI generation:** the test suite uses controlled clients for repeatability; a passing test suite does not establish that every external provider or generated answer is available/valid at submission time.
