@@ -1,23 +1,21 @@
-# Stage 2 - Implementation Status
+# Stage 2 Implementation and Evidence Status
 
-## Phase 1
+Last checked: November 7, 2026. The Stage 1 proposal is the baseline; see the Stage 2 compliance crosswalk and report for feature-level details.
 
-F01 Course Management, F02 Course Material Import and Processing, F03 Course Material Search and Retrieval, and the Phase 4 AI foundation are implemented in the current working tree.
+| Requirement | Status | Evidence / remaining work |
+|---|---|---|
+| Stage 1 features F01-F14 | Implemented in code | Shared services, GUI/CLI as specified, tests, feature mappings, and demos are listed in `design-to-implementation-traceability.md`; hosted video contents still need final playback verification. |
+| New Stage 2 feature F15 | Implemented in code | GUI provider/model selection and process-environment CLI selection with `ai status`; detailed in report/crosswalk. |
+| GUI and CLI | Implemented | Spring MVC/Thymeleaf and Picocli share application services through `StudyAgentFacade`; F09/F10 are GUI-only. |
+| Five meaningful patterns | Implemented | MVC, Facade, Adapter, Strategy, Command; explained with roles and code evidence in the report. Repository is supplementary. |
+| LLM and bounded agent | Implemented | Ollama/Gemini adapters; retrieval, structured validation, bounded planning, allowlisted tools, and ten-event memory. Provider-dependent quality remains a limitation. |
+| Stage 2 automated verification | Passed locally | Java 21 `mvnd clean test` and `mvnd package`, Nov 7: each ran 207 tests, 0 failures, 0 errors, 0 skipped. Fresh-JAR smoke returned HTTP 200 for `/`, `/courses`, `/ai/status`; CLI help checked for `quiz`, `recommend`, and `agent`; read-only quiz list, recommendation, and history commands completed for EECS3221. |
+| Stage 2 videos | URLs checked; content review incomplete | All 15 YouTube and 14 GitHub release asset URLs returned HTTP 200 to unauthenticated HEAD requests. `00:00` links to the start of each standalone recording. F08/F13 CLI video evidence is still pending; playback/content has not been manually checked. |
+| Weekly code commits | Listed; links response-checked | Five meaningful code commits are listed for each required period in `weekly-commit-summary.md`; all 15 commit URLs returned HTTP 200 to unauthenticated HEAD checks. |
+| AI collaboration and usage costs | Partial evidence | Representative work and known model details are recorded in `ai-collaboration-log.md`. Complete token/money totals are not present in the retained repository records and must come from authoritative platform usage/billing exports or be reported as unavailable. |
+| Final report PDF | Generated; visual review in progress | `stage2-report.pdf` was regenerated from `stage2-report.md` using Chrome. It is 7 pages, Letter size; inspect the final rendered pages before submission. |
+| Public repository submission | Not yet verified | Confirm final report/source/docs are pushed, links are public, README works from a clean clone, and no secrets/local data are tracked. |
 
-Implemented: Maven/Java 21 project foundation, Spring Boot web startup, file H2 configuration, isolated test H2, course and document entities/repositories/services, document validation/hash/storage/extraction/normalization/chunking, deterministic lexical retrieval with course/status scoping, request/response DTOs, StudyAgentFacade course/material/search operations, Thymeleaf course/material/search GUI, controlled web/CLI errors, Picocli course/material/search commands, and deterministic tests.
+## Scope and limitations
 
-Verification status is recorded in `docs/build-status.md`. Phase 1, Phase 2, and Phase 3 were verified with Java 21, Maven Daemon 1.0.6 / bundled Maven 3.9.16, 23 passing tests, a successful package build, web search, CLI search, ranking/error handling, and persisted H2 data. AI collaboration is recorded in `docs/stage2/ai-collaboration-log.md`.
-
-Phase 4 AI foundation is implemented and verified. Phase 5 F04 grounded Q&A is also implemented and verified through `GroundedQuestionService`, shared web/CLI entry points, retrieval-first grounding, bounded context, structured responses, and source validation. Later AI features remain unimplemented.
-
-## Phase 6
-
-F05 and F06 are implemented as hybrid application services. `SummarizationService` validates ownership/readiness, reuses ordered persisted chunks or `CourseSearchService`, builds bounded prompts, calls `LlmClient`, parses structured JSON, and validates StudyForge-owned source metadata. `ConceptExtractionService` performs the same document validation and source checks, then deterministically deduplicates concepts. Web and CLI routes share `StudyAgentFacade`. Results are intentionally request-based because summary/concept persistence is not present in the current schema; later learning records are persisted where required.
-
-## Phase 7
-
-F07 is implemented as a hybrid feature. `FlashcardGenerationService` performs document ownership/readiness checks, bounded grounding, structured LLM generation, source validation, duplicate removal, and persistence. `FlashcardReviewService` lists course-owned cards and appends deterministic rating events without calling the LLM. Web and Picocli commands share the facade.
-
-## F08-F14 and agent continuation
-
-F08-F10 add persisted grounded quizzes, course-owned attempts, deterministic objective grading, provider-neutral short-answer grading, and validated grounded wrong-answer explanations. F11 adds deterministic progress and weak-topic analysis. F12 adds persisted strategy-based study plans. F13/F14 add deterministic recommendations and chronological learning history. The bounded agent layer is implemented through explicit intent analysis, observable planning, plan validation, whitelisted tool execution, bounded memory, and response synthesis. Verification details are recorded in `docs/final-implementation-status.md`.
+Image-only PDF OCR, embeddings/vector retrieval, authentication, cloud hosting, and multi-user identity are outside the Stage 1 proposal scope. Stage 2 basic implementation verification is included; full deterministic test planning and KUMA agent evaluation belong to Stage 3.

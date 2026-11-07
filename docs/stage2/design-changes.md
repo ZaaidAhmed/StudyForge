@@ -1,29 +1,17 @@
-# Stage 2 - Design Changes
+# Stage 2 Design Changes and Rationale
 
-Phase 1 implementation introduced no conceptual deviation from the approved architecture. The CLI uses a separate `CoursePilotCliApplication` entry point with a `cli` Spring profile so the web app does not start unnecessarily; both entry points still call `StudyAgentFacade` and `CourseService`. This is an implementation detail of the approved GUI/CLI sharing rule, not a feature redesign.
+The approved Stage 1 proposal remains the source baseline. The implementation-specific mapping is in `design-to-implementation-traceability.md`; this file summarizes each deliberate change without rewriting the Stage 1 proposal.
 
-The Stage 1 UML abbreviated the course lookup method as `findByCode`. During implementation it was clarified as `getCourseByCode`, and the service now returns DTOs at the application boundary. The UML and Stage 2 traceability were updated; domain persistence remains behind the service.
+| Original design | Implemented change | Reason | Impact |
+|---|---|---|---|
+| Course CLI/web use a shared service boundary; course lookup abbreviated as `findByCode`. | Separate `CoursePilotCliApplication`/`cli` profile; clarified `CourseService.getCourseByCode` DTO contract. | Avoid starting the web server for CLI use and clarify the service boundary. | Use cases and shared behavior are preserved. |
+| F02 `MaterialImportService` and `FileStorage`. | `CourseMaterialService` and `FileStorageService` coordinate validation, extraction, storage, normalization, chunking, and persistence. | Match service naming and keep infrastructure collaborators focused. | UC02 behavior and file safety remain intact. |
+| F03 `MaterialSearchService` with lexical retrieval. | `CourseSearchService` uses `RetrievalScorer` and deterministic `LexicalRetrievalScorer`. | Make course scope explicit and results explainable; Stage 1 excluded embeddings/vector search. | F03 remains deterministic lexical retrieval. |
+| Ollama `qwen2.5-coder:14b` as the initial provider/model. | Provider-neutral `LlmClient` routes to Ollama and Gemini; local `qwen3:4b` was selected for available hardware; F15 adds GUI runtime choice and CLI environment configuration. | Improve local model fit and allow provider flexibility without coupling services. | Provider selection is documented; API keys remain local. |
+| Stage 1 bounded structured-generation response handling. | Add schema compatibility, source/quality validation, duplicate filtering, targeted retry/backfill, and explicit partial-count messages. | Provider formats and source quality vary; silent shortfalls and duplicate cards/questions were user-visible defects. | Invalid or unsupported content is not persisted as if successful; unique source content still limits possible count. |
+| Standard browser-embedded PDF display in document chat flow. | Application-controlled page rendering. | Keep chat and document reading in one managed workspace. | Document-specific Q&A remains available; no change to imported source data. |
+| Quiz deletion with dependent records. | Remove dependent attempts before course-owned quiz deletion. | Avoid orphaned attempt rows. | Delete remains scoped to the selected course. |
+| F14 chronological history with ten-event agent memory. | Group/filter persisted activity and selectively pass up to ten recent events for relevant agent synthesis. | Improve scanning and use bounded context without letting history override grounded course evidence. | History still derives only from flashcard reviews, quiz attempts, and study plans; transcripts/hidden reasoning are excluded. |
+| Stage 1 class/use-case/sequence diagrams describe planned architecture. | Add implementation-specific Stage 2 UML while preserving original proposal diagrams. | Provider routing, GUI/CLI workflows, and bounded memory evolved during implementation. | Reviewers can compare intended and actual design without losing the original baseline. |
 
-Verification corrections did not change the approved architecture: duplicate detection was made null-safe for new entities and its test fixture now supplies a persisted ID; web forms explicitly bind to the template's `courseForm` model so validation messages render; and the README CLI example was corrected for Windows PowerShell's `-D` argument parsing.
-
-For F02, the approved Stage 1 `MaterialImportService`/`FileStorage` names were realized as `CourseMaterialService`/`FileStorageService` to match the existing Phase 1 service naming convention. The workflow and SD01 responsibilities remain the same; the Stage 1 traceability and UML were updated to the actual names. No intentional technology-stack or feature-scope deviation was introduced.
-
-For F03, the planned `MaterialSearchService` name was realized as `CourseSearchService` because it searches one selected course and follows the existing `CourseService` naming convention. The implementation uses one concrete lexical scorer behind the `RetrievalScorer` abstraction; no artificial alternative algorithms were added merely to claim a design pattern. The SD08 sequence and traceability now reflect the actual classes.
-
-When implementation changes the Stage 1 design, record the original design, reason, affected files/classes/UML, human decision, and verification evidence here rather than silently rewriting Stage 1 history.
-
-## Phase 4
-
-- Realized the planned provider-neutral `LlmClient` plus `OllamaLlmAdapter` boundary without introducing a framework-specific AI SDK.
-- Added typed AI contracts, configurable `AiProperties`, prompt/structured-output utilities, and an explicit CLI status capability.
-- No deviation from the planned scope: Q&A, embeddings, OCR, vector search, and agent orchestration remain future work.
-
-## Phase 5
-
-- Realized F04 through a dedicated `GroundedQuestionService`; presentation layers delegate the complete workflow rather than duplicating retrieval or prompting.
-- Source content uses existing F03 snippets because the provider-neutral Q&A contract needs bounded, inspectable context; no repository-wide query or second retrieval algorithm was introduced.
-- Invalid model source references are rejected as an unsafe response rather than displayed.
-
-## Phase 7
-
-F07 follows the Stage 1 persistence intent by adding normalized `Flashcard`, `FlashcardSource`, and `FlashcardReview` tables. Review history is intentionally flashcard-specific and append-only; global learning history, progress calculations, spaced repetition, and event orchestration remain deferred. Source provenance is relational rather than a fabricated text-only field.
+F15 is new, not a replacement for a Stage 1 feature. The project continues to implement all F01-F14; no original feature is silently omitted. Any verification correction (form binding, safe deletion, parser recovery, or CLI argument handling) is treated as a defect fix unless it changes the user need or architecture.

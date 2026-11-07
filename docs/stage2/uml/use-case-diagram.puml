@@ -1,0 +1,58 @@
+@startuml StudyForgeStage2UseCases
+left to right direction
+actor Student
+actor "Ollama runtime" as Ollama
+actor "Gemini API" as Gemini
+rectangle StudyForge {
+  usecase "F01 Manage courses" as F01
+  usecase "F02 Import materials" as F02
+  usecase "F03 Search course material" as F03
+  usecase "F04 Ask grounded question" as F04
+  usecase "F05 Summarize material/topic" as F05
+  usecase "F06 Extract concepts" as F06
+  usecase "F07 Generate/review flashcards" as F07
+  usecase "F08 Generate/list quizzes" as F08
+  usecase "F09 Take/grade quiz" as F09
+  usecase "F10 Explain wrong answer" as F10
+  usecase "F11 Inspect progress" as F11
+  usecase "F12 Create study plan" as F12
+  usecase "F13 Get recommendation / run bounded agent task" as F13
+  usecase "F14 Inspect history / bounded memory" as F14
+  usecase "F15 Select local/cloud AI provider" as F15
+}
+Student -- F01
+Student -- F02
+Student -- F03
+Student -- F04
+Student -- F05
+Student -- F06
+Student -- F07
+Student -- F08
+Student -- F09
+Student -- F10
+Student -- F11
+Student -- F12
+Student -- F13
+Student -- F14
+Student -- F15
+F04 -- Ollama
+F04 -- Gemini
+F05 -- Ollama
+F05 -- Gemini
+F06 -- Ollama
+F06 -- Gemini
+F07 -- Ollama
+F07 -- Gemini
+F08 -- Ollama
+F08 -- Gemini
+F10 -- Ollama
+F10 -- Gemini
+F15 -- Ollama
+F15 -- Gemini
+note bottom of F09
+GUI workflow; quiz generation/listing also have CLI commands.
+end note
+note bottom of F10
+GUI-only; no CLI command or agent tool.
+end note
+@enduml
