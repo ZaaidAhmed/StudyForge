@@ -24,4 +24,4 @@ Meaningful implementation commits published to the StudyForge repository. Docume
 2. [History timeline](https://github.com/ZaaidAhmed/StudyForge/commit/c32bc35309cfdf6649a66e3f3c793a378fc3a633)
 3. [Study-plan guidance](https://github.com/ZaaidAhmed/StudyForge/commit/297f10f907b343c01f8b515d434393e55a0bc0a6)
 4. [Agent workflows](https://github.com/ZaaidAhmed/StudyForge/commit/9b0d17d350beb7db02d30c7d66f0e228edd5e77f)
-5. [Verification tooling](https://github.com/ZaaidAhmed/StudyForge/commit/28c74f8932b55a80bd85d484665e05e87de279cd)
+5. [Verification tooling](https://github.com/ZaaidAhmed/StudyForge/commit/5a91a8d3e6aa2661675c30b9f9f005d3f413f012)
