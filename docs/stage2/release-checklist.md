@@ -15,6 +15,7 @@ Updated November 7, 2026. Check items only after the final evidence exists.
 - [x] `mvnd clean test` on Java 21: 207 tests, 0 failures, 0 errors, 0 skipped (Nov 7, 2026).
 - [x] `mvnd package` on Java 21; 207 tests, 0 failures, 0 errors, 0 skipped (Nov 7, 2026).
 - [x] Fresh-JAR smoke: `/`, `/courses`, `/ai/status` returned HTTP 200 on port 18080; packaged CLI help checked for `quiz`, `recommend`, and `agent`; read-only quiz list, recommendation, and history commands completed for EECS3221.
+- [x] GitHub Actions `Verify` passed on Ubuntu for `c30308c`: 207 tests, 0 failures/errors/skips, package and fresh-JAR smoke passed.
 - [ ] Course/document isolation and restart persistence checks recorded for final release.
 - [ ] README commands and safe `.env.example` verified from clean checkout.
 

@@ -11,7 +11,8 @@
 - All 15 YouTube links, 14 release assets, and 15 weekly commit links returned HTTP 200 to unauthenticated HEAD requests. This checks URL response, not playback or video content.
 - The regenerated report PDF is 8-page Letter size; the landscape crosswalk and UML overview were visually inspected.
 - Video inspection: the F08 release MP4 was reviewed and includes CLI `quiz generate/list` from 01:35. The F13 MP4 has a general CLI walkthrough from 03:05, but it does not show `recommend` or `agent`; targeted F13 CLI recording remains open. Other feature videos still need full review.
-- Remaining submission gates: targeted F13 CLI video; authoritative AI usage/billing records where available; clean-checkout and instructor-access check; final GitHub Actions rerun after fixing a Linux-only filename validation test failure.
+- GitHub Actions on `c30308c` passed on Ubuntu with 207 tests, 0 failures/errors/skips, packaged build, and fresh-JAR smoke. The prior failure was traced to host-dependent validation of Windows path separators and fixed in `DocumentValidator`.
+- Remaining submission gates: targeted F13 CLI video; authoritative AI usage/billing records where available; clean-checkout and instructor-access check; full review of all feature videos.
 
 ## Historical verification record (not current release status)
 
