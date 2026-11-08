@@ -3,7 +3,7 @@
 **Course:** EECS3311 Software Design, Fall 2026
 **Repository:** [ZaaidAhmed/StudyForge](https://github.com/ZaaidAhmed/StudyForge)
 **Report evidence checked:** November 7, 2026
-**Status:** Java 21 tests, package build, fresh-JAR web smoke, CLI checks, public video/asset/commit link response checks, and publication to `StudyForge/master` passed. GitHub returns HTTP 200 for the published report, status page, compliance matrix, and PDF. Exact video-content review, provider billing exports, clean-clone verification, and instructor-access confirmation remain evidence gates.
+**Status:** The published `fa47c4b` revision passed Java 21 CI (207 tests, package, and fresh-JAR smoke). A clean clone also passed the Java 21 package, web smoke, README CLI walkthrough, isolated course/document checks, persistence across CLI process restarts, and a tracked-file audit. Full video playback/timestamp review, the F13/F14 CLI cross-reference, provider billing exports, instructor-access confirmation, and synchronized PDF regeneration remain open evidence gates.
 
 ## 1. Project overview and implementation status
 
@@ -97,9 +97,11 @@ Representative interactions are recorded in `ai-collaboration-log.md`. That log 
 - **Date/environment:** November 7, 2026, OpenJDK 21.0.12.1, Maven Daemon 1.0.6.
 - **Automated suite:** `mvnd clean test` completed successfully: **207 tests, 0 failures, 0 errors, 0 skipped**.
 - **Package:** `mvnd package` completed successfully on Java 21 on November 7, 2026; it reran the suite with **207 tests, 0 failures, 0 errors, 0 skipped** and produced `target/studyforge-ai-0.1.0-SNAPSHOT.jar`.
-- **GitHub Actions:** the cross-platform `Verify` workflow passed on commit `c30308c` (Ubuntu, Java 21): **207 tests, 0 failures, 0 errors, 0 skipped**, packaged application built, and fresh-JAR smoke passed. The earlier red checks were caused by a Unix-host filename test gap; upload validation now rejects both slash styles on every operating system.
+- **GitHub Actions:** the cross-platform `Verify` workflow passed on the published commit `fa47c4b` ([run 42416941967](https://github.com/ZaaidAhmed/StudyForge/actions/runs/42416941967), Ubuntu, Java 21): **207 tests, 0 failures, 0 errors, 0 skipped**, package and fresh-JAR smoke passed. The earlier red checks were caused by a Unix-host filename test gap; upload validation now rejects both slash styles on every operating system.
 - **Fresh-JAR web smoke:** `scripts/verify.ps1 -SkipBuild -Port 18080` started the packaged JAR and received HTTP 200 from `/`, `/courses`, and `/ai/status`.
 - **CLI checks:** packaged-JAR help commands for `quiz`, `recommend`, and `agent` completed. Read-only `quiz list --course EECS3221`, `recommend --course EECS3221`, and `history --course EECS3221` also completed. This confirms command registration and these read workflows, not a full AI-backed quiz generation or agent task run.
+- **Clean-clone verification:** the published `fa47c4b` was cloned into an isolated temporary directory on Java 21. `mvnd clean package` passed with **207 tests, 0 failures, 0 errors, 0 skipped**; `scripts/verify.ps1 -SkipBuild` returned HTTP 200 for `/`, `/courses`, and `/ai/status`. README-style `sf --help`, `sf course list`, and `sf material list` commands passed using an isolated H2 database.
+- **Course isolation and persistence:** in that isolated database, two verification courses were created; course A remained available to a later CLI process after the creating process exited. A document imported to course A did not appear in course B's list, and `material show` for that document under course B returned not found without revealing its content.
 - **Provider and live AI generation:** the test suite uses controlled clients for repeatability; a passing test suite does not establish that every external provider or generated answer is available/valid at submission time.
 - **Browser and CLI demonstration:** use the public video index and README for feature invocations. F09/F10 are GUI-only; F15 CLI behavior is environment selection followed by `ai status`.
 
@@ -107,13 +109,13 @@ The tests cover deterministic services, parsing, retrieval, repository behavior,
 
 ### Repository and release evidence
 
-The weekly summary lists five meaningful code commits in each reporting period (October 20-26, October 27-November 2, and November 3-9, Toronto local dates). Unauthenticated HTTP HEAD checks on November 7 returned status 200 for all 15 commit links. `.gitignore` excludes `.env`, local data/uploads, logs, build output, and local config; `.env.example` contains placeholders, not a credential. The tracked-file list and staged release set were checked; neither contains `.env`, local databases, uploads, logs, or build output.
+The weekly summary lists five meaningful code commits in each reporting period (October 20-26, October 27-November 2, and November 3-9, Toronto local dates). Unauthenticated HTTP HEAD checks on November 7 returned status 200 for all 15 commit links. In a clean clone, tracked-path checks found no `.env`, local databases, uploads, logs, build output, local demo index, or `unsupported.exe`; a scan for common Gemini, GitHub, and OpenAI key formats found no matches. `.gitignore` excludes `.env`, local data/uploads, logs, build output, and local config; `.env.example` contains placeholders, not a credential. Instructor access to the submission remains unconfirmed.
 
 ## 7. Demonstration index
 
-The public index is `docs/stage2/demo-index.md`. Unauthenticated HTTP HEAD checks on November 7, 2026 returned status 200 for all 15 YouTube URLs and all 14 listed GitHub release assets. The F08 and F13 release MP4s were downloaded and inspected in Chrome at multiple points. F08 includes GUI generation and a CLI segment beginning at 01:35; it shows quiz generation/listing and a 20-question saved result. F13 includes GUI assistant examples and a general CLI walkthrough beginning at 03:05, but the CLI segment does not show the F13 `recommend` or `agent` commands. URL availability and sampled playback do not establish full-content review of all 15 recordings.
+The public index is `docs/stage2/demo-index.md`. Unauthenticated HTTP HEAD checks on November 7, 2026 returned status 200 for all 15 YouTube URLs and all 14 listed GitHub release assets. The F08 and F13 release MP4s were sampled in Chrome. F08's CLI segment begins at 01:35 and shows quiz generation/listing and a 20-question saved result. F13's general CLI walkthrough begins at 03:05 but does not show the F13 `recommend` or `agent` commands. The F14 recording has not been checked for either command, and most other public index timestamps remain unverified. URL availability and sampled playback do not establish full-content review of all 15 recordings.
 
-F08 GUI/CLI video evidence is present in the published clip; the CLI segment begins at 01:35. F13's published clip contains a general CLI walkthrough but does not demonstrate its `recommend` or `agent` commands, so targeted F13 CLI video evidence remains open. Packaged-JAR help was checked for `quiz`, `recommend`, and `agent`; F08's actual GUI video shows generation and the saved count. F09/F10 are correctly marked GUI-only. Full review of every recording, authoritative AI billing exports, clean-checkout verification, and instructor-access confirmation remain open.
+F08 GUI/CLI evidence is present in its published clip; the CLI segment begins at 01:35. F13's published clip contains a general CLI walkthrough but does not demonstrate `recommend` or `agent`; the F14 recording must be reviewed before concluding whether either command appears there. F09/F10 are GUI-only. Full review of every recording and verification of remaining timestamps, authoritative AI billing exports, and instructor-access confirmation remain open. Clean-clone verification has now passed as recorded in Section 6.
 
 ## 8. Updated UML class diagram
 
@@ -123,8 +125,8 @@ The following diagram summarizes the implemented classes and important dependenc
 
 ## 9. Submission gates and known evidence gaps
 
-- Review playback and exact content for all 15 YouTube videos; unauthenticated link response checks returned HTTP 200 for all YouTube and listed release asset URLs.
-- Confirm exact timestamps and contents for all remaining demonstrations; record targeted F13 `recommend`/`agent` CLI evidence.
+- Review playback and exact content for all 15 YouTube videos; replace unverified timestamp placeholders in the index with checked segment starts.
+- Inspect the F14 recording for F13 `recommend`/`agent` CLI evidence; if absent, record targeted video evidence or disclose the remaining gap.
 - Complete AI development-tool/model/token/money-cost records from authoritative usage data or state platform telemetry limitations precisely.
 - Repeat verification on the exact commit that will be submitted; the current local package, web smoke, and CLI help checks passed, while full GUI/CLI feature workflow recording remains outstanding.
-- The report, diagrams, README links, safe sample configuration, source, weekly links, and videos are present in the public repository; HTTP 200 was verified for the report, status page, compliance matrix, and PDF. Verify clean-clone behavior and instructor access before submission.
+- The report, diagrams, README links, safe sample configuration, source, weekly links, and videos are present in the public repository. Clean-clone behavior and the tracked-file audit passed; instructor access remains to be confirmed. After report edits, regenerate and visually inspect `stage2-report.pdf` before treating the two report formats as synchronized.
