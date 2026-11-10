@@ -1,9 +1,9 @@
 # StudyForge Stage 2 Implementation Report
 
-**Course:** EECS3311 Software Design, Fall 2026<br>
-**Repository:** [ZaaidAhmed/StudyForge](https://github.com/ZaaidAhmed/StudyForge)<br>
-**Report evidence checked:** November 7, 2026<br>
-**Report source and PDF synchronized:** November 9, 2026<br>
+**Course:** EECS3311 Software Design, Fall 2026
+**Repository:** [ZaaidAhmed/StudyForge](https://github.com/ZaaidAhmed/StudyForge)
+**Report evidence checked:** November 7, 2026
+**Report source and PDF synchronized:** November 9, 2026
 **Status:** The published `fa47c4b` revision passed Java 21 CI (207 tests, package, and fresh-JAR smoke). A clean clone also passed the Java 21 package, web smoke, README CLI walkthrough, isolated course/document checks, persistence across CLI process restarts, and a tracked-file audit. Full video playback/timestamp review, the F13/F14 CLI cross-reference, provider billing exports, and instructor-access confirmation remain open evidence gates. The PDF is synchronized with this source as of November 9, 2026.
 
 ## 1. Project overview and implementation status
@@ -77,7 +77,7 @@ The following five patterns are distinct and visible in code. Repository is also
 | Quiz deletion without explicit dependent cleanup | Course-scoped deletion removes dependent attempts before the quiz. | Prevent orphaned attempt rows. | Deletion remains scoped and consistent with persistence constraints. |
 | Stage 1 F14 bounded recent memory | History page groups/filter activities; memory remains ten recent events and is passed selectively to relevant agent synthesis. | Make persisted activity easier to inspect while keeping memory bounded and relevant. | History remains derived only from flashcard reviews, quiz attempts, and plans; no transcripts or hidden reasoning are stored. |
 
-The Stage 1 proposal remains unmodified as the baseline. Updated implementation UML and crosswalks are in `docs/stage2/uml/` and `design-to-implementation-traceability.md`.
+The Stage 1 proposal remains unmodified as the baseline. Updated implementation UML is in `docs/stage2/uml/`; the feature-to-implementation crosswalk is in Section 2 of this report.
 
 ## 5. AI tools and human collaboration
 
