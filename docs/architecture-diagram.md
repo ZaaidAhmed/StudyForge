@@ -2,8 +2,6 @@
 
 This diagram is a catch-up view of the implemented StudyForge AI modular monolith. Solid arrows show the main runtime flow; dashed arrows show optional or supporting interactions.
 
-## StudyForge AI Architecture
-
 The original single diagram was too dense to read. This version uses four smaller diagrams. Read them from top to bottom: first the system map, then the main user request flow, then material/AI processing, and finally the agent loop.
 
 ## 1. System map
@@ -18,9 +16,9 @@ flowchart TB
     subgraph App[CoursePilot Spring Boot application]
         WebLayer[Web layer\nSpring MVC + Thymeleaf]
         CliLayer[CLI layer\nPicocli commands]
-        Services[Application services\nCourses | Materials | Search\nQ&A | Quizzes | Flashcards\nProgress | Plans | Recommendations | History]
+        Services[Application services\nCourses, materials, search\nQ&A, quizzes, flashcards\nProgress, plans, recommendations, history]
         Agent[Agent orchestration\nAnalyze -> Plan -> Validate -> Execute]
-        Ai[AI boundary\nLlmClient | PromptBuilder\nStructuredResponseParser]
+        Ai[AI boundary\nLlmClient, PromptBuilder\nStructuredResponseParser]
         Domain[Domain models + repositories]
     end
 
@@ -136,7 +134,7 @@ flowchart LR
     Plan[TaskPlanner\ncreate observable steps]
     Check[AgentPlanValidator\ncourse scope + max 5 steps]
     Tools[AgentToolManager\nwhitelisted tools]
-    Services[Existing services\nsearch | progress | history\nrecommend | summary | cards\nquiz | study plan]
+    Services[Existing services\nsearch, progress, history\nrecommend, summary, cards\nquiz, study plan]
     Memory[MemoryManager\nrecent observable history]
     Response[ResponseSynthesizer]
     Student[Student-facing response]
