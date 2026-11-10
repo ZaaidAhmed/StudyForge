@@ -1,9 +1,10 @@
 # StudyForge Stage 2 Implementation Report
 
-**Course:** EECS3311 Software Design, Fall 2026
-**Repository:** [ZaaidAhmed/StudyForge](https://github.com/ZaaidAhmed/StudyForge)
-**Report evidence checked:** November 7, 2026
-**Status:** The published `fa47c4b` revision passed Java 21 CI (207 tests, package, and fresh-JAR smoke). A clean clone also passed the Java 21 package, web smoke, README CLI walkthrough, isolated course/document checks, persistence across CLI process restarts, and a tracked-file audit. Full video playback/timestamp review, the F13/F14 CLI cross-reference, provider billing exports, instructor-access confirmation, and synchronized PDF regeneration remain open evidence gates.
+**Course:** EECS3311 Software Design, Fall 2026<br>
+**Repository:** [ZaaidAhmed/StudyForge](https://github.com/ZaaidAhmed/StudyForge)<br>
+**Report evidence checked:** November 7, 2026<br>
+**Report source and PDF synchronized:** November 9, 2026<br>
+**Status:** The published `fa47c4b` revision passed Java 21 CI (207 tests, package, and fresh-JAR smoke). A clean clone also passed the Java 21 package, web smoke, README CLI walkthrough, isolated course/document checks, persistence across CLI process restarts, and a tracked-file audit. Full video playback/timestamp review, the F13/F14 CLI cross-reference, provider billing exports, and instructor-access confirmation remain open evidence gates. The PDF is synchronized with this source as of November 9, 2026.
 
 ## 1. Project overview and implementation status
 
@@ -84,11 +85,11 @@ The application uses local Ollama and optionally hosted Gemini for student-facin
 
 | Tool/platform | Model evidence | Representative task and contribution | Human role/outcome | Usage/cost record |
 |---|---|---|---|---|
-| Codex coding assistant | GPT-5 recorded for Phases 1-3; exact model for later sessions is not present in retained project records. | Implemented/refined shared services, grounded-generation validation, quiz/flashcard recovery, agent workflows, history, study-plan guidance, README, and release documentation. | The student specified scope and acceptance behavior, reviewed the implementation, supplied screenshots/errors, and directed corrections and verification. | Aggregate development token and monetary totals are not exposed in the retained repository log. Do not treat as zero or estimate. Obtain from the coding platform's usage/billing export if available; otherwise report the platform's limitation. |
+| Codex coding assistant | GPT-5 recorded for Phases 1-3; exact model for later sessions is not present in retained project records. | Implemented/refined shared services, grounded-generation validation, quiz/flashcard recovery, agent workflows, history, study-plan guidance, README, and release documentation. | The student specified scope and acceptance behavior, reviewed the implementation, supplied screenshots/errors, and directed corrections and verification. | Student-reported subscription price: approximately $28 per month; currency and billing-period details are not independently verified. This is a shared subscription price, not a project-attributed cost. Project-level token use and attributable monetary cost are unavailable without the account usage export. |
 | Ollama runtime | `qwen3:4b`; `qwen-claude-14b:latest` also installed/used in documented attempts. | Local provider for grounded learning and content generation; documented provider attempts sometimes returned controlled structured-output failures. | Application validates model output; failed/invalid output is not silently persisted. | No hosted API charge; local compute cost is not measured by the app. |
 | Gemini API | Configurable model is listed in README; the project log does not establish a complete usage total. | Optional hosted provider for app AI requests when configured. | User supplies and keeps the API key local; no secret is included in the repository/report. | Per-account monetary/token total must come from provider usage records; not recoverable from source code or local build results. |
 
-Representative interactions are recorded in `ai-collaboration-log.md`. That log distinguishes retained evidence from missing exact model/usage telemetry. Before submission, replace any unresolved usage record with an exported factual total or an explicit platform limitation, not an estimate.
+Representative interactions are recorded in `ai-collaboration-log.md`. The reported monthly subscription price is separated from project-attributed consumption. Exact project token totals and attributable Codex cost are unavailable without the account usage export; Gemini API charges are also unverified.
 
 ## 6. Development and verification summary
 
@@ -128,5 +129,5 @@ The following diagram summarizes the implemented classes and important dependenc
 - Review playback and exact content for all 15 YouTube videos; replace unverified timestamp placeholders in the index with checked segment starts.
 - Inspect the F14 recording for F13 `recommend`/`agent` CLI evidence; if absent, record targeted video evidence or disclose the remaining gap.
 - Complete AI development-tool/model/token/money-cost records from authoritative usage data or state platform telemetry limitations precisely.
-- Repeat verification on the exact commit that will be submitted; the current local package, web smoke, and CLI help checks passed, while full GUI/CLI feature workflow recording remains outstanding.
-- The report, diagrams, README links, safe sample configuration, source, weekly links, and videos are present in the public repository. Clean-clone behavior and the tracked-file audit passed; instructor access remains to be confirmed. After report edits, regenerate and visually inspect `stage2-report.pdf` before treating the two report formats as synchronized.
+- Before submission, rerun verification on the exact final commit. The clean clone at published commit `fa47c4b` passed packaging, web smoke, the README CLI walkthrough, course/document isolation, persistence across CLI restarts, and the tracked-file audit. Full feature-by-feature GUI/CLI recording review remains outstanding.
+- The report, diagrams, README links, safe sample configuration, source, weekly links, and videos are present in the public repository. Clean-clone behavior and the tracked-file audit passed; instructor access remains to be confirmed. This PDF was regenerated from the current Markdown source and visually reviewed on November 9, 2026; regenerate it after future report edits.

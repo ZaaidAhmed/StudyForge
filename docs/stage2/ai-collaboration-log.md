@@ -16,6 +16,6 @@ This record summarizes representative AI contributions, not every prompt. Entrie
 |---|---|
 | Local Ollama application inference | No hosted API charge; actual electricity/hardware cost was not measured. The app does not record token usage. |
 | Gemini application inference | Token and monetary totals must be exported from the Gemini account's usage/billing records. No authoritative aggregate was retained in this repository. |
-| Codex development assistance | GPT-5 is recorded for Phases 1-3. Exact model names for later work and aggregate input/output-token or monetary totals are not present in the retained project logs. Obtain them from the platform's usage export if available; if unavailable, report that limitation in the submitted report. |
+| Codex development assistance | GPT-5 is recorded for Phases 1-3. The student reports paying approximately $28 per month for the subscription used for development assistance; currency and billing-period details have not been independently verified. This is the subscription price, not a project-attributed cost. Exact model names for later work and project-level token totals are unavailable. |
 
-Do not interpret missing usage telemetry as zero cost. Do not include API keys, credentials, private account details, or unverified cost estimates in the final report.
+Do not interpret missing usage telemetry as zero cost. The reported monthly subscription price must not be presented as the project's total cost because the subscription is shared with other work and project-level usage is unavailable. Do not include API keys, credentials, or private account details in the final report.

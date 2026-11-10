@@ -4,6 +4,7 @@ StudyForge is a course-scoped study workspace for importing materials, asking gr
 
 ## Contents
 
+- [Quick evaluation guide](#quick-evaluation-guide)
 - [Start here](#start-here)
 - [Run the web application](#run-the-web-application)
 - [Run the CLI](#run-the-cli)
@@ -13,6 +14,17 @@ StudyForge is a course-scoped study workspace for importing materials, asking gr
 - [Design and demonstration documentation](#design-and-demonstration-documentation)
 - [Configuration and data](#configuration-and-data)
 - [Limitations](#limitations)
+
+## Quick evaluation guide
+
+For a fast review of the submitted project:
+
+1. Read the [Stage 2 report](docs/stage2/stage2-report.md) for feature mapping, architecture, design changes, and verification results.
+2. Use the [F01-F15 demonstration index](docs/stage2/demo-index.md) to open the feature videos. The index identifies GUI-only workflows and CLI coverage.
+3. To run StudyForge locally, follow [Run the web application](#run-the-web-application). The course workspace opens at [http://localhost:8080](http://localhost:8080).
+4. To inspect the command-line workflows, follow [Run the CLI](#run-the-cli), then use the [F01-F15 command guide](#f01-f15-feature-and-cli-guide).
+
+The [PDF report](stage2-report.pdf) is the submission copy; the Markdown report is its editable source.
 
 ## Start here
 
@@ -224,7 +236,7 @@ Other supported Gemini models are `gemini-3.8-flash` and `gemini-2.5-flash`. She
 - [Stage 1/F15 compliance matrix](docs/stage1-compliance-matrix.md)
 - [Current release QA status](docs/release-qa-report.md)
 - [Stage 2 implementation traceability](docs/stage2/design-to-implementation-traceability.md)
-- [Stage 2 implementation report (Markdown)](docs/stage2/stage2-report.md) · [PDF](stage2-report.pdf)
+- [Stage 2 implementation report (Markdown)](docs/stage2/stage2-report.md) | [PDF](stage2-report.pdf)
 - [F01-F15 demo index](docs/stage2/demo-index.md)
 - [Weekly commit summary](docs/stage2/weekly-commit-summary.md)
 - [AI collaboration and usage record](docs/stage2/ai-collaboration-log.md)
