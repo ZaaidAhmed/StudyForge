@@ -1,5 +1,5 @@
 @startuml StudyForgeStage2Implemented
-title StudyForge Stage 2 — Implemented class view
+title StudyForge Stage 2: Implemented class view
 skinparam packageStyle rectangle
 skinparam classAttributeIconSize 0
 

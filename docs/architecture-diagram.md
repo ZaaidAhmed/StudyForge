@@ -1,176 +1,186 @@
 # StudyForge AI Architecture
 
-This diagram is a catch-up view of the implemented StudyForge AI modular monolith. Solid arrows show the main runtime flow; dashed arrows show optional or supporting interactions.
+This document describes the architecture implemented in the current StudyForge source. StudyForge is a Spring Boot modular monolith: the web application and Picocli CLI share application services, domain models, persistence, and provider integrations. The diagrams show the main runtime paths; optional AI calls are separated from deterministic workflows.
 
-The original single diagram was too dense to read. This version uses four smaller diagrams. Read them from top to bottom: first the system map, then the main user request flow, then material/AI processing, and finally the agent loop.
-
-## 1. System map
+## 1. System architecture
 
 ```mermaid
 flowchart TB
-    User[Student]
-    Web[Browser]
-    Cli[Picocli CLI]
-    Facade[StudyAgentFacade]
+    Student[Student]
+    Browser[Browser]
+    Terminal[Terminal]
 
-    subgraph App[CoursePilot Spring Boot application]
-        WebLayer[Web layer\nSpring MVC + Thymeleaf]
-        CliLayer[CLI layer\nPicocli commands]
-        Services[Application services\nCourses, materials, search\nQ&A, quizzes, flashcards\nProgress, plans, recommendations, history]
-        Agent[Agent orchestration\nAnalyze -> Plan -> Validate -> Execute]
-        Ai[AI boundary\nLlmClient, PromptBuilder\nStructuredResponseParser]
-        Domain[Domain models + repositories]
+    subgraph App[StudyForge Spring Boot application]
+        Web[Spring MVC controllers and Thymeleaf views]
+        Cli[Picocli commands]
+        Facade[StudyAgentFacade]
+        Services[Course and learning services]
+        Agent[Bounded agent orchestration]
+        Domain[Domain models]
+        Repositories[Spring Data JPA repositories]
+        AiServices[AI-backed application services]
+        AiPort[LlmClient interface]
+        Router[RoutingLlmClient]
+        OllamaAdapter[OllamaLlmAdapter]
+        GeminiAdapter[GeminiLlmAdapter]
+        UnsupportedAdapter[UnavailableLlmClient]
+        Properties[AiProperties]
     end
 
-    Files[(data/uploads\nPDF, TXT, MD)]
-    Database[(H2 file database)]
-    Ollama[(Optional Ollama\nlocal HTTP API)]
+    Uploads[(Local uploaded files)]
+    H2[(File-backed H2 database)]
+    Ollama[(Ollama local API)]
+    Gemini[(Gemini API)]
 
-    User --> Web
-    User --> Cli
-    Web --> WebLayer --> Facade
-    Cli --> CliLayer --> Facade
+    Student --> Browser --> Web
+    Student --> Terminal --> Cli
+    Web --> Facade
+    Cli --> Facade
+    Cli -. "some commands inject services directly" .-> Services
     Facade --> Services
     Facade --> Agent
     Agent --> Services
-    Services --> Ai
     Services --> Domain
-    Domain --> Database
-    Services --> Files
-    Ai --> Ollama
+    Domain --> Repositories --> H2
+    Services --> Uploads
+    AiServices --> AiPort --> Router
+    Router --> Properties
+    Router --> OllamaAdapter --> Ollama
+    Router --> GeminiAdapter --> Gemini
+    Router -. "unsupported provider configuration" .-> UnsupportedAdapter
 
-    classDef actor fill:#e8f1ff,stroke:#2563a6,color:#102a43
+    classDef entry fill:#e8f1ff,stroke:#2563a6,color:#102a43
     classDef app fill:#eaf7ef,stroke:#2f855a,color:#173b2b
+    classDef ai fill:#f3e8ff,stroke:#7c3aed,color:#312e81
     classDef store fill:#fff4d6,stroke:#b7791f,color:#4a3200
     classDef external fill:#f3f4f6,stroke:#6b7280,color:#1f2937
-    class User,Web,Cli actor
-    class WebLayer,CliLayer,Facade,Services,Agent,Ai,Domain app
-    class Files,Database store
-    class Ollama external
+    class Student,Browser,Terminal entry
+    class Web,Cli,Facade,Services,Agent,Domain,Repositories app
+    class AiServices,AiPort,Router,OllamaAdapter,GeminiAdapter,UnsupportedAdapter,Properties ai
+    class Uploads,H2 store
+    class Ollama,Gemini external
 ```
 
-**Key idea:** the browser and CLI are two entrances to the same application services. The project is a modular monolith, not a collection of separate microservices.
+The application keeps presentation, use-case orchestration, provider adapters, and persistence in one deployable process. Web controllers and CLI commands translate user input to shared application behavior; a small number of CLI commands use application services directly.
 
-## 2. Normal request flow
-
-This is the path for course management, material search, quiz submission, flashcard review, progress, plans, and other regular operations.
+## 2. Request and persistence flow
 
 ```mermaid
 flowchart LR
-    Request[Student request]
-    Entry{Browser or CLI?}
-    Controller[Controller or command\ninput + validation]
-    Facade[StudyAgentFacade\nshared entry point]
-    Service[Application service\nbusiness workflow]
-    Repo[Repository\ncourse-scoped data access]
-    Db[(H2 database)]
-    Result[DTO / view model]
-    Screen[Web page or CLI output]
+    Request[Course-scoped user request]
+    Choice{Web or CLI}
+    Controller[Spring MVC controller]
+    Command[Picocli command]
+    Facade[StudyAgentFacade]
+    Service[Application service]
+    Model[Domain model]
+    Repository[Course-scoped repository]
+    Database[(H2 database)]
+    View[Thymeleaf response]
+    Output[CLI output]
 
-    Request --> Entry
-    Entry --> Controller
-    Controller --> Facade --> Service
-    Service --> Repo --> Db
-    Db --> Repo --> Service
-    Service --> Result --> Screen
+    Request --> Choice
+    Choice --> Controller --> Facade
+    Choice --> Command --> Facade
+    Controller -. "direct service injection for selected workflows" .-> Service
+    Command -. "direct service injection for selected commands" .-> Service
+    Facade --> Service --> Model --> Repository --> Database
+    Database --> Repository --> Service
+    Service --> View
+    Service --> Output
 
-    classDef input fill:#e8f1ff,stroke:#2563a6,color:#102a43
+    classDef user fill:#e8f1ff,stroke:#2563a6,color:#102a43
     classDef logic fill:#eaf7ef,stroke:#2f855a,color:#173b2b
     classDef data fill:#fff4d6,stroke:#b7791f,color:#4a3200
-    class Request,Entry,Controller,Result,Screen input
-    class Facade,Service logic
-    class Repo,Db data
+    class Request,Choice,Controller,Command,View,Output user
+    class Facade,Service,Model logic
+    class Repository,Database data
 ```
 
-**Why this matters:** controllers and CLI commands do not duplicate business logic. They translate input, call the facade, and display the result.
+Course, document, quiz, flashcard, attempt, review, and study-plan operations are validated in application services and queried through course-scoped repositories. The database is stored at `./data/coursepilot`; uploaded source files are stored separately under `./data/uploads`.
 
-## 3. Material and AI flow
-
-This is the important evidence pipeline behind search, grounded Q&A, summaries, concepts, flashcards, quizzes, and wrong-answer explanations.
+## 3. Material, retrieval, and AI flow
 
 ```mermaid
 flowchart TB
-    Upload[PDF / TXT / Markdown upload]
-    Validate[Validate type, size, path]
-    Store[Store with generated safe filename]
-    Extract[Extract text\nPDFBox or text reader]
-    Clean[Normalize text]
-    Chunk[Split into overlapping chunks\nkeep page metadata]
-    Persist[Persist document + chunks]
-    Search[CourseSearchService\ndeterministic lexical ranking]
-    Context[GroundingContextBuilder\nbounded context + source IDs]
-    Prompt[PromptBuilder\nsource-only instructions]
-    Contract[LlmClient]
-    Provider[OllamaLlmAdapter]
-    Model[(Ollama model)]
-    Parse[StructuredResponseParser\nparse JSON + validate source IDs]
-    Feature[Validated result\nanswer, summary, concepts, cards, or quiz]
+    Upload[PDF, TXT, or Markdown upload]
+    Validate[Validate type, size, and filename]
+    Store[Store under generated safe filename]
+    Extract[Extract text]
+    Normalize[Normalize text]
+    Chunk[Create overlapping chunks with page metadata]
+    Persist[Persist document and chunks]
+    Search[CourseSearchService lexical ranking]
+    Ground[Build bounded evidence and source IDs]
+    Prompt[PromptBuilder creates task prompt]
+    Port[LlmClient]
+    Route[RoutingLlmClient]
+    Provider{Selected provider}
+    Ollama[Ollama adapter and local model]
+    Gemini[Gemini adapter and hosted model]
+    Parse[Parse structured response]
+    ValidateOutput[Validate schema, source ownership, and content]
+    Result[Answer, summary, concepts, quiz, or flashcards]
+    NoEvidence[Controlled insufficient-evidence result]
 
-    Upload --> Validate --> Store --> Extract --> Clean --> Chunk --> Persist
-    Persist --> Search --> Context --> Prompt --> Contract --> Provider --> Model
-    Model --> Provider --> Contract --> Parse --> Feature
-    Search -. "No evidence: return controlled empty / insufficient result" .-> Feature
+    Upload --> Validate --> Store --> Extract --> Normalize --> Chunk --> Persist
+    Persist --> Search --> Ground --> Prompt --> Port --> Route --> Provider
+    Provider --> Ollama --> Parse
+    Provider --> Gemini --> Parse
+    Parse --> ValidateOutput --> Result
+    Search -. "no usable evidence" .-> NoEvidence
 
     classDef source fill:#e8f1ff,stroke:#2563a6,color:#102a43
     classDef process fill:#eaf7ef,stroke:#2f855a,color:#173b2b
-    classDef ai fill:#fce8e8,stroke:#c53030,color:#4a1515
-    classDef result fill:#fff4d6,stroke:#b7791f,color:#4a3200
-    class Upload,Model source
-    class Validate,Store,Extract,Clean,Chunk,Persist,Search,Context process
-    class Prompt,Contract,Provider,Parse ai
-    class Feature result
+    classDef ai fill:#f3e8ff,stroke:#7c3aed,color:#312e81
+    classDef outcome fill:#fff4d6,stroke:#b7791f,color:#4a3200
+    class Upload,Ollama,Gemini source
+    class Validate,Store,Extract,Normalize,Chunk,Persist,Search,Ground process
+    class Prompt,Port,Route,Provider,Parse,ValidateOutput ai
+    class Result,NoEvidence outcome
 ```
 
-**Safety boundary:** model output is treated as untrusted data. It must be structured, use supplied source IDs, and pass validation before it becomes an application result or persisted learning content.
+Retrieval is deterministic lexical search over the selected course's ready document chunks. AI-backed features receive bounded evidence; parsed outputs and cited source IDs are validated before results are displayed or saved. If AI is unavailable, deterministic workflows such as search, objective quiz grading, progress aggregation, study planning, and history remain available.
 
-## 4. Agent and adaptation loop
-
-The agent does not receive arbitrary system access. It can only execute the registered, course-scoped tools shown below.
+## 4. Bounded agent, history, and planning
 
 ```mermaid
 flowchart LR
-    Request[Agent request]
-    Intent[IntentAnalyzer\nunderstand request]
-    Plan[TaskPlanner\ncreate observable steps]
-    Check[AgentPlanValidator\ncourse scope + max 5 steps]
-    Tools[AgentToolManager\nwhitelisted tools]
-    Services[Existing services\nsearch, progress, history\nrecommend, summary, cards\nquiz, study plan]
-    Memory[MemoryManager\nrecent observable history]
-    Response[ResponseSynthesizer]
-    Student[Student-facing response]
+    UserRequest[Course-scoped agent request]
+    Intent[IntentAnalyzer]
+    Planner[TaskPlanner]
+    Validator[AgentPlanValidator]
+    ToolManager[AgentToolManager allowlist]
+    Services[Approved course services]
+    Synthesis[ResponseSynthesizer]
+    Answer[Student-facing response]
+    History[LearningHistoryService]
+    Memory[MemoryManager latest 10 events]
+    Events[Persisted reviews, quiz attempts, and plans]
+    Progress[ProgressService]
+    Recommendation[RecommendationService]
+    StudyPlan[StudyPlanService and strategies]
 
-    Request --> Intent --> Plan --> Check --> Tools --> Services --> Response --> Student
-    Memory --> Response
-    Services --> Memory
-
-    Quiz[Quiz completed]
-    Review[Flashcard reviewed]
-    Progress[ProgressService\nweak-topic analysis]
-    Recommendation[RecommendationService\nnext action]
-    History[LearningHistoryService\nchronological records]
-
-    Quiz --> Progress
-    Review --> Progress
-    Progress --> Recommendation
-    Quiz --> History
-    Review --> History
-    History --> Memory
-    Progress --> Memory
+    UserRequest --> Intent --> Planner --> Validator --> ToolManager --> Services --> Synthesis --> Answer
+    Events --> History --> Memory --> Synthesis
+    Services --> Progress --> Recommendation
+    Services --> StudyPlan
 
     classDef input fill:#e8f1ff,stroke:#2563a6,color:#102a43
-    classDef control fill:#fff4d6,stroke:#b7791f,color:#4a3200
+    classDef control fill:#f3e8ff,stroke:#7c3aed,color:#312e81
     classDef service fill:#eaf7ef,stroke:#2f855a,color:#173b2b
-    classDef event fill:#fce8e8,stroke:#c53030,color:#4a1515
-    class Request,Student input
-    class Intent,Plan,Check,Tools,Memory,Response control
-    class Services,Progress,Recommendation,History service
-    class Quiz,Review event
+    classDef data fill:#fff4d6,stroke:#b7791f,color:#4a3200
+    class UserRequest,Answer input
+    class Intent,Planner,Validator,ToolManager,Synthesis,Memory control
+    class Services,Progress,Recommendation,StudyPlan,History service
+    class Events data
 ```
 
-**Agent sequence:** understand the request, build a plan, reject unsafe or invalid steps, execute approved tools, combine their results with bounded recent history, and return an observable answer.
+The agent validates proposed plans before executing allowlisted tools and uses at most ten recent persisted learning events when synthesizing relevant history or progress responses. The history feature is derived from flashcard reviews, quiz attempts, and study-plan creation. Study plans use deterministic strategies (balanced, weak-topic focused, or exam focused) to distribute the submitted time budget across dated activities.
 
-## Boundaries to remember
+## Architecture boundaries
 
-- Authentication and multi-user identity are not implemented in the current release; they are out of scope.
-- Ollama is optional. Deterministic course, material, search, grading, progress, planning, and history features remain usable when AI is unavailable.
-- OCR, embeddings, vector search, LMS/calendar/email integrations, cloud deployment, and microservices are out of scope.
+- The web app and CLI are interfaces to the same Spring Boot application; this is not a microservice deployment.
+- Ollama and Gemini are optional provider integrations selected through `AiProperties` and `RoutingLlmClient`.
+- User uploads and the H2 database are local runtime data, separate from source code.
+- Authentication, multi-user identity, OCR, embeddings/vector search, and cloud deployment are not implemented.
