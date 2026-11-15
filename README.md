@@ -28,49 +28,63 @@ The [PDF report](stage2-report.pdf) is the authoritative Stage 2 report and the 
 
 ## Start here
 
+### Clone the repository
+
+```powershell
+git clone https://github.com/ZaaidAhmed/StudyForge.git
+Set-Location StudyForge
+```
+
+```bash
+git clone https://github.com/ZaaidAhmed/StudyForge.git
+cd StudyForge
+```
+
 ### Requirements
 
-- Java 21
-- Maven 3.9 or newer
-- Ollama is optional for local AI. Gemini requires an API key for hosted AI.
+- A Java 21 JDK (not only a JRE).
+- Git.
+- Network access on the first wrapper run so it can download the pinned Maven distribution and project dependencies.
 
-No Node.js, Docker, or external database server is needed to run the application. Node.js is only needed for the optional browser demo recorder in `scripts/`.
+You do not need to install Maven: the repository includes the Maven Wrapper. No Node.js, Docker, or external database server is needed to run StudyForge. Node.js is only needed for the optional browser demo recorder in `scripts/`. An AI provider is optional for starting the app; AI-backed actions need a reachable Ollama instance or configured Gemini credentials.
 
 ### Windows PowerShell
 
-Run these commands from the repository root. If `java` is not on `PATH`, set `JAVA_HOME` to your Java 21 installation first:
+Run these commands from the cloned repository root. Check that Java 21 is active, then build and test:
+
+```powershell
+java -version
+.\mvnw.cmd clean test
+.\mvnw.cmd package
+```
+
+If `java -version` does not show version 21, install a Java 21 JDK and set `JAVA_HOME` to its installation directory. For example, replace the placeholder below with your actual JDK path:
 
 ```powershell
 $env:JAVA_HOME = 'C:\path\to\jdk-21'
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
-```
-
-```powershell
 java -version
-mvn -version
-mvn clean test
-mvn package
 ```
 
 ### macOS or Linux
 
 ```bash
 java -version
-mvn -version
-mvn clean test
-mvn package
+./mvnw clean test
+./mvnw package
 ```
 
-`mvn package` builds the executable JAR at `target/studyforge-ai-0.1.0-SNAPSHOT.jar` and runs the tests as part of the Maven package lifecycle.
-If you use Maven Daemon, substitute `mvnd` for `mvn` in these commands.
+The wrapper pins Maven 3.9.16 and downloads it on first use. If your checkout does not preserve the Unix executable bit, run `chmod +x mvnw` once. Contributors with Maven installed may use `mvn clean test` and `mvn package` instead. Packaging creates `target/studyforge-ai-0.1.0-SNAPSHOT.jar`.
 
 ## Run the web application
 
 From the repository root:
 
 ```text
-mvn spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
+
+On macOS/Linux, use `./mvnw spring-boot:run`.
 
 Open [http://localhost:8080](http://localhost:8080), choose a course, and use its materials and study tools. Stop the server with `Ctrl+C`.
 
@@ -80,9 +94,11 @@ To run the packaged JAR instead:
 java -jar target/studyforge-ai-0.1.0-SNAPSHOT.jar
 ```
 
+The web app listens on port 8080 by default. You can open the home page without setting up AI; AI-powered actions show provider errors or unavailable status until a provider is reachable.
+
 ## Run the CLI
 
-Build the JAR first with `mvn package`. Run CLI commands from the repository root so the CLI uses the same `.env`, H2 database, and uploaded files as the web app.
+Build the JAR first with `.\mvnw.cmd package` on PowerShell or `./mvnw package` on macOS/Linux. Run CLI commands from the repository root so the CLI uses the same `.env`, H2 database, and uploaded files as the web app.
 
 ### Windows PowerShell launcher
 
@@ -114,6 +130,27 @@ sf --help
 sf course --help
 sf material --help
 sf study-plan create --help
+```
+
+### First course and sample material
+
+This optional walkthrough creates a course and imports the included, non-sensitive sample notes. Choose a different course code if `SFDEMO01` already exists in your local database.
+
+PowerShell:
+
+```powershell
+sf course create --code SFDEMO01 --name "StudyForge Demo Course"
+sf course list
+sf material add --course SFDEMO01 --file .\scripts\demo-fixtures\quick-reference.txt
+sf material list --course SFDEMO01
+```
+
+The import command prints the new material ID and chunk count. Copy that ID from the output or `material list`; use it for commands that require `--document`. The sample workflow uses deterministic import and listing and does not require an AI provider. To run the same commands on macOS/Linux, use the `sf` Bash function above and the path `scripts/demo-fixtures/quick-reference.txt`.
+
+For example, after noting the document ID, try a grounded question when a provider is configured:
+
+```text
+sf ask --course SFDEMO01 --question "What is the main idea in this material?"
 ```
 
 Start by checking your course code and the material IDs in that course:
@@ -241,10 +278,20 @@ Other supported Gemini models are `gemini-3.8-flash` and `gemini-2.5-flash`. She
 
 ## Configuration and data
 
-- `.env.example` documents local AI settings. Copy it to `.env` for local overrides; never commit API keys.
-- Real process environment variables take precedence over `.env` values.
+- AI configuration is optional for starting the web app or using deterministic features. AI generation, summaries, and grounded answers require a reachable provider.
+- `.env.example` documents local Ollama defaults and a commented Gemini example. For local settings, copy it with `Copy-Item .env.example .env` in PowerShell or `cp .env.example .env` on macOS/Linux, then edit `.env`. Never commit API keys.
+- Shell/process environment variables take precedence over `.env`; `.env` is loaded from the current working directory (run the app from the repository root).
 - H2 data is stored under `./data/coursepilot`; uploaded documents are stored under `./data/uploads`.
-- Default upload limit is 10 MB. Text-based PDF, TXT, and Markdown files are supported.
+- The local database and uploaded files are created on first use and persist across restarts. They are local runtime data and are not tracked by Git.
+- PDF, TXT, and Markdown uploads are supported, with a 10 MB upload limit. Scanned/image-only PDFs are not OCR processed.
+
+### Common startup issues
+
+- **Java version error:** Confirm `java -version` reports Java 21 and that `JAVA_HOME` points to the JDK 21 directory.
+- **Wrapper cannot download Maven:** Check network access to Maven Central, then rerun `mvnw`/`mvnw.cmd`.
+- **Port 8080 is busy:** Stop the other service using the port or configure a different Spring Boot port for this run.
+- **AI action cannot run:** Check `sf ai status`; start Ollama and pull the selected model, or configure Gemini and its API key. The application itself can still start without AI availability.
+- **Material import fails:** Use a supported PDF, TXT, or Markdown file under 10 MB and check that the path exists from the repository root.
 
 ## Limitations
 
