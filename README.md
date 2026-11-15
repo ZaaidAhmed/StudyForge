@@ -252,24 +252,45 @@ Other supported Gemini models are `gemini-3.8-flash` and `gemini-2.5-flash`. She
 
 ## Project map
 
-| Path | What it contains |
-|---|---|
-| `src/main/java/.../application/` | Use cases, services, and application DTOs shared by web and CLI. |
-| `src/main/java/.../domain/` | Course and learning entities, repository contracts, and domain rules. |
-| `src/main/java/.../infrastructure/` | H2 repositories, document extraction/storage, AI adapters, and provider routing. |
-| `src/main/java/.../web/` | Spring MVC controllers and web view models. |
-| `src/main/java/.../cli/` | Picocli commands and the non-web CLI entry point. |
-| `src/main/resources/templates/` | Thymeleaf pages and layouts. |
-| `src/main/resources/static/` | Application CSS and JavaScript. |
-| `src/test/` | Unit, service, and MVC tests. |
-| `docs/stage1/` and `docs/stage2/` | Feature requirements, architecture, traceability, demos, and delivery records. |
-| `scripts/` | Verification and optional local demo-recording tools. |
-| `data/` | Local H2 database and uploaded material files; generated at runtime and not committed. |
+```text
+StudyForge/
+├── .github/workflows/          # CI verification
+├── .mvn/wrapper/               # Maven Wrapper configuration
+├── docs/
+│   ├── architecture-diagram.md # Current implementation architecture
+│   ├── reference/              # Assignment and proposal references
+│   ├── stage1/                 # Original feature specifications and UML
+│   └── stage2/                 # Report evidence, demos, and updated UML
+├── scripts/
+│   ├── demo-fixtures/          # Sample material for CLI/demo workflows
+│   └── ...                     # Verification and demo-recording scripts
+├── src/
+│   ├── main/java/ca/yorku/eecs3311/coursepilot/
+│   │   ├── application/        # Use cases, shared services, and DTOs
+│   │   ├── cli/                 # Picocli commands
+│   │   ├── domain/              # Learning entities and domain rules
+│   │   ├── infrastructure/      # Persistence, document processing, AI adapters
+│   │   └── web/                 # Spring MVC controllers and view models
+│   ├── main/resources/
+│   │   ├── static/              # CSS and JavaScript
+│   │   └── templates/           # Thymeleaf views
+│   └── test/                    # Unit, service, MVC tests, and fixtures
+├── .env.example                 # Safe local configuration template
+├── .gitignore
+├── mvnw                         # Unix Maven Wrapper launcher
+├── mvnw.cmd                     # Windows Maven Wrapper launcher
+├── pom.xml
+├── README.md
+└── stage2-report.pdf
+```
+
+The tree shows the published project structure. Runtime data, personal configuration, build output, and local tooling are created or kept locally and are not part of the repository.
 
 ## Design and demonstration documentation
 
 - [Stage 1 feature specifications](docs/stage1/02-feature-specifications.md)
 - [Stage 1 architecture](docs/stage1/07-architecture.md)
+- [Current implementation architecture diagram](docs/architecture-diagram.md)
 - [Stage 2 implementation report (PDF)](stage2-report.pdf)
 - [F01-F15 demo index](docs/stage2/demo-index.md)
 - [Weekly commit summary](docs/stage2/weekly-commit-summary.md)
